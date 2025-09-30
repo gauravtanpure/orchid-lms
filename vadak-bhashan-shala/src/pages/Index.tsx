@@ -4,7 +4,7 @@ import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import CourseGrid from '@/components/CourseGrid';
-import Testimonials from '@/components/Testimonials';
+import Blogs from '@/components/Blogs'; // Changed import from Testimonials to Blogs
 import Footer from '@/components/Footer';
 
 const Index = () => {
@@ -16,7 +16,7 @@ const Index = () => {
           <Hero />
           <About />
           <CourseGrid />
-          <Testimonials />
+          <Blogs /> {/* Changed component from Testimonials to Blogs */}
         </main>
         <Footer />
       </div>

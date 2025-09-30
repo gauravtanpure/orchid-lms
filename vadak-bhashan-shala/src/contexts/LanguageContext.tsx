@@ -15,7 +15,7 @@ const translations: Translations = {
   courses: { en: 'Courses', mr: 'अभ्यासक्रम' },
   about: { en: 'About', mr: 'आमच्याबद्दल' },
   contact: { en: 'Contact', mr: 'संपर्क' },
-  testimonials: { en: 'Testimonials', mr: 'प्रशंसापत्रे' },
+  blogs: { en: 'Blogs', mr: 'ब्लॉग्ज' },
   login: { en: 'Login', mr: 'लॉगिन' },
   signup: { en: 'Sign Up', mr: 'नोंदणी करा' },
   
@@ -89,6 +89,12 @@ const translations: Translations = {
   proceedToCheckout: { en: 'Proceed to Checkout', mr: 'चेकआउटवर जा' },
   courseAdded: { en: 'Course Added!', mr: 'अभ्यासक्रम जोडला!' },
   addedToCart: { en: 'has been added to your cart', mr: 'तुमच्या कार्टमध्ये जोडला गेला आहे' },
+  
+  // NEW Blog Section
+  latest_blogs: { en: 'Our Latest Insights', mr: 'आमचे नवीनतम लेख' },
+  blog_subtitle: { en: 'Knowledge and Communication Strategy from Our Experts', mr: 'आमच्या तज्ञांकडून संवाद आणि धोरणावरील ज्ञान' },
+  read_more: { en: 'Read Article', mr: 'लेख वाचा' },
+  view_all_blogs: { en: 'View All Blogs', mr: 'सर्व ब्लॉग पहा' },
 };
 
 interface LanguageContextType {

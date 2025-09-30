@@ -20,7 +20,7 @@ const Header: React.FC = () => {
     { key: 'home', href: '/' },
     { key: 'courses', href: '#courses' },
     { key: 'about', href: '#about' },
-    { key: 'testimonials', href: '#testimonials' },
+    { key: 'blogs', href: '#blogs' }, // Changed 'testimonials' to 'blogs'
     { key: 'contact', href: '#contact' },
   ];
 
