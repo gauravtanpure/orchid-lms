@@ -66,7 +66,7 @@ const About: React.FC = () => {
             {t('about')}
           </h2>
           <p className="text-subheading max-w-3xl mx-auto">
-            SpeakMaster is Maharashtra's premier online platform for public speaking education, designed specifically for Marathi speakers who want to enhance their communication skills in both Marathi and English.
+            Orchid is Maharashtra's premier online platform for public speaking education, designed specifically for Marathi speakers who want to enhance their communication skills in both Marathi and English.
           </p>
         </div>
 
@@ -111,7 +111,7 @@ const About: React.FC = () => {
         <div className="mt-20 text-center">
           <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl p-12 max-w-4xl mx-auto">
             <h3 className="text-3xl font-bold mb-6 text-primary">
-              Why Choose SpeakMaster?
+              Why Choose Orchid?
             </h3>
             <p className="text-lg text-muted-foreground leading-relaxed mb-8">
               We understand the unique challenges faced by Marathi speakers in developing public speaking skills. Our courses are culturally sensitive, age-appropriate, and designed with the specific needs of the 30-70 age group in mind. Whether you want to improve your Marathi oratory skills or master English presentations, we provide the perfect learning environment.

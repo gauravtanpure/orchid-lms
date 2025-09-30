@@ -40,7 +40,7 @@ const Footer: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-heading font-bold">SpeakMaster</h3>
+            <h3 className="text-2xl font-heading font-bold">Orchid</h3>
             <p className="text-primary-foreground/80 leading-relaxed">
               Empowering Marathi speakers to master public speaking skills through expert-led courses and practical training.
             </p>
@@ -49,7 +49,7 @@ const Footer: React.FC = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4" />
-                <span className="text-sm">info@speakmaster.com</span>
+                <span className="text-sm">info@Orchid.com</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4" />
@@ -149,7 +149,7 @@ const Footer: React.FC = () => {
 
             {/* Copyright */}
             <div className="text-sm text-primary-foreground/80">
-              © {new Date().getFullYear()} SpeakMaster. All rights reserved.
+              © {new Date().getFullYear()} Orchid. All rights reserved.
             </div>
           </div>
         </div>

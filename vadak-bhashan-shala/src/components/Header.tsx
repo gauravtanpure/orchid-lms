@@ -43,27 +43,15 @@ const Header: React.FC = () => {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
             {(isLoggedIn ? loggedInNavItems : navItems).map((item) => (
-              <Link
+              <a // Changed Link to a for hash links
                 key={item.key}
-                to={item.href.startsWith('#') ? `/${item.href}` : item.href}
+                href={item.href}
                 className="text-foreground hover:text-primary transition-colors duration-200 font-medium"
               >
                 {t(item.key)}
-              </Link>
+              </a>
             ))}
           </nav>
-
-          {/* Search Bar - Desktop */}
-          <div className="hidden lg:flex items-center space-x-4 flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <input
-                type="text"
-                placeholder={t('search')}
-                className="w-full pl-10 pr-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
-              />
-            </div>
-          </div>
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
@@ -143,14 +131,14 @@ const Header: React.FC = () => {
           <div className="px-4 py-4 space-y-4">
             <nav className="space-y-3">
               {(isLoggedIn ? loggedInNavItems : navItems).map((item) => (
-                <Link
+                <a // Changed Link to a for hash links
                   key={item.key}
-                  to={item.href.startsWith('#') ? `/${item.href}` : item.href}
+                  href={item.href}
                   className="block text-foreground hover:text-primary transition-colors font-medium py-2"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {t(item.key)}
-                </Link>
+                </a>
               ))}
             </nav>
             
