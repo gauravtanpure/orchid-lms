@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertTriangle } from 'lucide-react'; // Import AlertTriangle
 
 const Login: React.FC = () => {
   const { login } = useAuth();
   const { t } = useLanguage();
+  const { toast } = useToast(); // Use toast hook
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,9 +25,19 @@ const Login: React.FC = () => {
     
     try {
       await login(email, password);
+      toast({
+        title: "Login Successful",
+        description: "Welcome back to Orchid Learning!",
+      });
       navigate('/');
     } catch (error) {
-      console.error('Login failed:', error);
+      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+      console.error('Login failed:', errorMessage);
+      toast({
+        title: "Login Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -49,6 +61,18 @@ const Login: React.FC = () => {
             <CardDescription>{t('loginDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
+            {/* DEMO CREDENTIALS REMINDER */}
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-3 mb-4 rounded-md text-sm">
+              <div className="flex items-center">
+                <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
+                <p className="font-medium">Demo Credentials:</p>
+              </div>
+              <ul className="list-disc list-inside ml-5 mt-1 text-xs">
+                <li>Email: <strong>demo@user.com</strong></li>
+                <li>Password: <strong>(any non-empty password)</strong></li>
+              </ul>
+            </div>
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">{t('email')}</Label>

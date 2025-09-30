@@ -1,9 +1,11 @@
 import React from 'react';
-import { Star, Clock, Users, ShoppingCart, Eye } from 'lucide-react';
+import { Star, Clock, Users, ShoppingCart, Eye, CheckCircle } from 'lucide-react'; // Added CheckCircle
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom'; // Import Link
 
 interface CourseCardProps {
   id: string;
@@ -39,6 +41,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const { t, language } = useLanguage();
   const { addToCart } = useCart();
   const { toast } = useToast();
+  const { isLoggedIn, isEnrolled } = useAuth(); // Use auth hooks
+  
+  const enrolled = isLoggedIn && isEnrolled(id); // Check enrollment status
 
   const handleAddToCart = () => {
     addToCart({
@@ -147,21 +152,35 @@ const CourseCard: React.FC<CourseCardProps> = ({
 
         {/* Action Buttons */}
         <div className="flex gap-2 mt-4">
-          <Button 
-            size="sm" 
-            className="flex-1 btn-primary"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            {t('addToCart')}
-          </Button>
-          <Button 
-            size="sm" 
-            variant="outline"
-            className="flex-1"
-          >
-            {t('buyNow')}
-          </Button>
+          {enrolled ? (
+            <Link to={`/my-courses`}> {/* Link to /my-courses or course detail page */}
+                <Button 
+                size="sm" 
+                className="w-full btn-success"
+                >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                {t('goToCourse')}
+                </Button>
+            </Link>
+          ) : (
+            <>
+              <Button 
+                size="sm" 
+                className="flex-1 btn-primary"
+                onClick={handleAddToCart}
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                {t('addToCart')}
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline"
+                className="flex-1"
+              >
+                {t('buyNow')}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>

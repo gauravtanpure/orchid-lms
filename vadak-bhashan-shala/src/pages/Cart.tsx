@@ -1,17 +1,58 @@
 import React from 'react';
 import { useCart } from '@/contexts/CartContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useToast } from '@/hooks/use-toast'; // Import useToast
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Trash2, ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const Cart: React.FC = () => {
-  const { items, removeFromCart, getTotalPrice, getTotalItems } = useCart();
+  const { items, removeFromCart, getTotalPrice, getTotalItems, clearCart } = useCart(); // Added clearCart
   const { t } = useLanguage();
+  const { isLoggedIn, enrollCourse } = useAuth(); // Use auth and enroll
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = React.useState(false);
+
+  const handleCheckout = () => {
+    if (!isLoggedIn) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to proceed to checkout.",
+        variant: "destructive",
+      });
+      navigate('/login');
+      return;
+    }
+
+    setIsProcessing(true);
+    // Simulate payment processing delay
+    setTimeout(() => {
+      // 1. Enroll user in all courses
+      items.forEach(item => {
+        // Only enroll if course is not a duplicate in the context, which enrollCourse handles
+        enrollCourse(item.id); 
+      });
+      
+      // 2. Clear the cart
+      clearCart();
+
+      // 3. Show success toast
+      toast({
+        title: "Purchase Successful!",
+        description: "Your courses have been added to your My Courses section. Redirecting...",
+      });
+
+      // 4. Navigate to My Courses page
+      navigate('/my-courses');
+      setIsProcessing(false);
+    }, 1500);
+  };
 
   if (items.length === 0) {
     return (
@@ -85,8 +126,13 @@ const Cart: React.FC = () => {
                   <span>{t('total')}:</span>
                   <span>₹{getTotalPrice()}</span>
                 </div>
-                <Button className="w-full" size="lg">
-                  {t('proceedToCheckout')}
+                <Button 
+                  className="w-full" 
+                  size="lg" 
+                  onClick={handleCheckout}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? t('processing_checkout') : t('proceedToCheckout')}
                 </Button>
                 <Link to="/">
                   <Button variant="outline" className="w-full">
