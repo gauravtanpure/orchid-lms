@@ -30,6 +30,7 @@ const SignUp = () => {
 
     React.useEffect(() => {
         if (!isLoggedIn) {
+            // Assuming register is imported and available from useAuth
             register('New Registered User', 'newuser@test.com', 'password123');
         }
         navigate('/');
@@ -53,24 +54,27 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* --- Your Existing User Routes --- */}
+                {/* --- Main User Routes --- */}
                 <Route path="/" element={<Index />} />
+                {/* NEW: Routes for main navigation sections, pointing to Index */}
+                <Route path="/courses" element={<Index />} />
+                <Route path="/about" element={<Index />} />
+                <Route path="/blogs" element={<Index />} />
+                <Route path="/contact" element={<Index />} />
+                
                 <Route path="/login" element={<Login />} />
                 <Route path="/signup" element={<SignUp />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/my-courses" element={<MyCourses />} />
                 
-                {/* --- NEW: Admin Routes --- */}
-                {/* This block defines all routes under the /admin path. */}
-                {/* The AdminLayout component acts as a wrapper and a guard, */}
-                {/* protecting all nested routes. */}
+                {/* --- Admin Routes (Already present in uploaded App.tsx) --- */}
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="courses" element={<ManageCourses />} />
                   <Route path="users" element={<ManageUsers />} />
                 </Route>
 
-                {/* --- Your Existing Catch-all Route --- */}
+                {/* --- Catch-all Route --- */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

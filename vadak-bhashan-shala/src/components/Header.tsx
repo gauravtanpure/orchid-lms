@@ -11,7 +11,7 @@ const Header: React.FC = () => {
   const { getTotalItems } = useCart();
   const { isLoggedIn, user, logout } = useAuth(); // Destructure user
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false); // New state for profile dropdown
+  const [isProfileOpen, setIsProfileOpen] = useState(false); // State for profile dropdown
 
   const toggleLanguage = () => {
     setLanguage(language === 'en' ? 'mr' : 'en');
@@ -23,36 +23,27 @@ const Header: React.FC = () => {
     setIsMenuOpen(false);
   };
 
+  // UPDATED: Use route paths instead of hash links for all main navigation items
   const navItems = [
     { key: 'home', href: '/' },
-    { key: 'courses', href: '#courses' },
-    { key: 'about', href: '#about' },
-    { key: 'blogs', href: '#blogs' },
-    { key: 'contact', href: '#contact' },
+    { key: 'courses', href: '/courses' }, // Change from '#courses' to route
+    { key: 'about', href: '/about' },     // Change from '#about' to route
+    { key: 'blogs', href: '/blogs' },     // Change from '#blogs' to route
+    { key: 'contact', href: '/contact' }, // Change from '#contact' to route
   ];
 
-  // Updated loggedInNavItems to use Link when applicable (for /my-courses)
+  // UPDATED: Simplified rendering to consistently use Link component for routes
   const desktopNavLinks = (isLoggedIn ? [
-    ...navItems.filter(item => item.key !== 'myCourses'), // Filter out to insert the Link version
-    { key: 'myCourses', href: '/my-courses', isLink: true }, // New Link item
+    ...navItems, 
+    { key: 'myCourses', href: '/my-courses' }, 
   ] : navItems).map((item) => (
-    item.isLink ? (
-        <Link // Use Link for /my-courses
-            key={item.key}
-            to={item.href}
-            className="text-foreground hover:text-primary transition-colors duration-200 font-medium flex items-center"
-        >
-            {t(item.key)}
-        </Link>
-    ) : (
-        <a // Use 'a' for hash links
-            key={item.key}
-            href={item.href}
-            className="text-foreground hover:text-primary transition-colors duration-200 font-medium"
-        >
-            {t(item.key)}
-        </a>
-    )
+    <Link 
+        key={item.key}
+        to={item.href}
+        className="text-foreground hover:text-primary transition-colors duration-200 font-medium flex items-center"
+    >
+        {t(item.key)}
+    </Link>
   ));
   
   const ProfileDropdown = () => (
@@ -201,8 +192,9 @@ const Header: React.FC = () => {
         <div className="md:hidden bg-card border-t border-border">
           <div className="px-4 py-4 space-y-4">
             <nav className="space-y-3">
+              {/* UPDATED: Use Link for all mobile navigation items */}
               {(isLoggedIn ? [{ key: 'myCourses', href: '/my-courses' }, ...navItems] : navItems).map((item) => (
-                <Link // Using Link for both hash and non-hash links in mobile menu for consistency
+                <Link 
                   key={item.key}
                   to={item.href}
                   className="block text-foreground hover:text-primary transition-colors font-medium py-2 flex items-center"
