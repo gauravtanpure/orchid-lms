@@ -4,8 +4,10 @@ import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import About from '@/components/About';
 import CourseGrid from '@/components/CourseGrid';
-import Blogs from '@/components/Blogs'; // Changed import from Testimonials to Blogs
+import Blogs from '@/components/Blogs'; 
 import Footer from '@/components/Footer';
+// 1. IMPORT THE NEW COMPONENT
+import Contact from '@/components/Contact'; 
 
 const Index = () => {
   return (
@@ -16,7 +18,9 @@ const Index = () => {
           <Hero />
           <About />
           <CourseGrid />
-          <Blogs /> {/* Changed component from Testimonials to Blogs */}
+          <Blogs />
+          {/* 2. RENDER THE NEW COMPONENT */}
+          <Contact /> 
         </main>
         <Footer />
       </div>
