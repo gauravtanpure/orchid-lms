@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useToast } from '@/hooks/use-toast'; // Import useToast
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, AlertTriangle } from 'lucide-react'; // Import AlertTriangle
+import { Eye, EyeOff, AlertTriangle, ShieldCheck } from 'lucide-react'; // Import ShieldCheck
 
 const Login: React.FC = () => {
-  const { login } = useAuth();
+  const { login, user } = useAuth(); // Get user object from context
   const { t } = useLanguage();
-  const { toast } = useToast(); // Use toast hook
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,12 +24,22 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      // The login function in context now sets the user object, including the role
+      await login(email, password); 
       toast({
         title: "Login Successful",
-        description: "Welcome back to Orchid Learning!",
+        description: "Welcome back!",
       });
-      navigate('/');
+
+      // The key change: check the user's role after login
+      // We need to access the updated user state, which might not be immediate.
+      // A reliable way is to check the email used for login.
+      if (email === 'admin@orchid.com') {
+        navigate('/admin'); // Redirect admin to admin dashboard
+      } else {
+        navigate('/'); // Redirect regular users to homepage
+      }
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
       console.error('Login failed:', errorMessage);
@@ -50,9 +60,7 @@ const Login: React.FC = () => {
           <Link to="/" className="text-3xl font-heading font-bold text-primary">
             Orchid
           </Link>
-          <p className="text-muted-foreground mt-2">
-            {t('loginSubtitle')}
-          </p>
+          <p className="text-muted-foreground mt-2">{t('loginSubtitle')}</p>
         </div>
 
         <Card className="shadow-xl">
@@ -65,10 +73,22 @@ const Login: React.FC = () => {
             <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-3 mb-4 rounded-md text-sm">
               <div className="flex items-center">
                 <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <p className="font-medium">Demo Credentials:</p>
+                <p className="font-medium">For Regular User:</p>
               </div>
               <ul className="list-disc list-inside ml-5 mt-1 text-xs">
                 <li>Email: <strong>demo@user.com</strong></li>
+                <li>Password: <strong>(any non-empty password)</strong></li>
+              </ul>
+            </div>
+
+            {/* ADMIN CREDENTIALS REMINDER */}
+            <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-3 mb-4 rounded-md text-sm">
+              <div className="flex items-center">
+                <ShieldCheck className="h-4 w-4 mr-2 flex-shrink-0" />
+                <p className="font-medium">For Admin:</p>
+              </div>
+              <ul className="list-disc list-inside ml-5 mt-1 text-xs">
+                <li>Email: <strong>admin@orchid.com</strong></li>
                 <li>Password: <strong>(any non-empty password)</strong></li>
               </ul>
             </div>

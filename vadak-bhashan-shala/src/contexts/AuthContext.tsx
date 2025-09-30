@@ -5,27 +5,26 @@ interface User {
   name: string;
   email: string;
   enrolledCourses: string[];
-  profileImage: string; // Added profile image
+  profileImage: string;
+  role: 'user' | 'admin'; // Add user role
 }
 
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>; // Added register
+  register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
-  isEnrolled: (courseId: string) => boolean; // New: Helper to check if a course is enrolled
-  enrollCourse: (courseId: string) => void; // New: Helper to enroll in a course (for cart purchase simulation)
+  isEnrolled: (courseId: string) => boolean;
+  enrollCourse: (courseId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// --- Local Storage Key ---
 const AUTH_STORAGE_KEY = 'orchid_auth_user';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
-    // Initialize state from localStorage
     try {
       const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
       return storedUser ? JSON.parse(storedUser) : null;
@@ -35,7 +34,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
-  // Effect to update localStorage whenever user state changes
   useEffect(() => {
     if (user) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
@@ -45,34 +43,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [user]);
 
   const login = async (email: string, password: string) => {
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500)); 
+
+    // Admin Credentials Check
+    if (email === 'admin@orchid.com' && password && password.length > 0) {
+      const mockAdmin: User = {
+        id: 'admin-001',
+        name: 'Admin User',
+        email: email,
+        enrolledCourses: [], // Admin doesn't enroll in courses
+        profileImage: 'https://i.pravatar.cc/150?img=68', // Admin avatar
+        role: 'admin', // Set role to admin
+      };
+      setUser(mockAdmin);
+      return; // Stop execution for admin
+    }
     
-    // Demo Credentials Check
+    // Regular Demo User Credentials Check
     if (email === 'demo@user.com' && password && password.length > 0) {
       const mockUser: User = {
-        id: '1',
+        id: 'user-001',
         name: 'Demo User',
         email: email,
-        enrolledCourses: ['course-101'], // Pre-enrolled course for demonstration
-        profileImage: 'https://i.pravatar.cc/150?img=1' // Placeholder image
+        enrolledCourses: ['course-101'],
+        profileImage: 'https://i.pravatar.cc/150?img=1',
+        role: 'user', // Set role to user
       };
       setUser(mockUser);
-    } else {
-      throw new Error("Invalid credentials or user not found. Use email: demo@user.com and any password.");
-    }
+      return; // Stop execution for regular user
+    } 
+    
+    throw new Error("Invalid credentials. Use admin@orchid.com or demo@user.com.");
   };
 
   const register = async (name: string, email: string, password: string) => {
-    // Mock registration: auto-login the new user
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     const mockNewUser: User = {
       id: `user-${Date.now()}`, 
       name: name,
       email: email,
       enrolledCourses: [],
-      profileImage: 'https://i.pravatar.cc/150?img=2' // Another placeholder
+      profileImage: 'https://i.pravatar.cc/150?img=2',
+      role: 'user', // New users are always 'user'
     };
     setUser(mockNewUser);
   };

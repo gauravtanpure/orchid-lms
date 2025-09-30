@@ -2,24 +2,32 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import React from 'react'; // Import React for useEffect
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CartProvider } from "@/contexts/CartContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+
+// --- User-facing Pages ---
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Cart from "./pages/Cart";
-import MyCourses from "./pages/MyCourses"; // Import new page
+import MyCourses from "./pages/MyCourses";
 import NotFound from "./pages/NotFound";
+
+// --- Admin-facing Pages (NEW) ---
+import AdminLayout from './pages/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ManageCourses from './pages/admin/ManageCourses';
+import ManageUsers from './pages/admin/ManageUsers';
 
 const queryClient = new QueryClient();
 
-// Mock SignUp component for routing
+// Mock SignUp component for routing (from your existing code)
 const SignUp = () => {
     const { register, isLoggedIn } = useAuth();
     const navigate = useNavigate();
 
-    // Simple mock registration and immediate redirect
     React.useEffect(() => {
         if (!isLoggedIn) {
             register('New Registered User', 'newuser@test.com', 'password123');
@@ -34,23 +42,35 @@ const SignUp = () => {
     );
 };
 
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <LanguageProvider>
+        {/* AuthProvider needs to wrap BrowserRouter for SignUp to work */}
         <AuthProvider>
           <CartProvider>
             <Toaster />
             <Sonner />
             <BrowserRouter>
               <Routes>
+                {/* --- Your Existing User Routes --- */}
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} /> {/* Added SignUp route */}
+                <Route path="/signup" element={<SignUp />} />
                 <Route path="/cart" element={<Cart />} />
-                <Route path="/my-courses" element={<MyCourses />} /> {/* Added MyCourses route */}
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/my-courses" element={<MyCourses />} />
+                
+                {/* --- NEW: Admin Routes --- */}
+                {/* This block defines all routes under the /admin path. */}
+                {/* The AdminLayout component acts as a wrapper and a guard, */}
+                {/* protecting all nested routes. */}
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="courses" element={<ManageCourses />} />
+                  <Route path="users" element={<ManageUsers />} />
+                </Route>
+
+                {/* --- Your Existing Catch-all Route --- */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>
