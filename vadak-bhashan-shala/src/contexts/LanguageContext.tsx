@@ -90,6 +90,32 @@ const translations: Translations = {
   courseAdded: { en: 'Course Added!', mr: 'अभ्यासक्रम जोडला!' },
   addedToCart: { en: 'has been added to your cart', mr: 'तुमच्या कार्टमध्ये जोडला गेला आहे' },
   
+  // NEW Contact Section
+  contact_title: { en: 'Get In Touch', mr: 'संपर्क साधा' },
+  contact_subtitle: { 
+    en: 'We would love to hear from you. Send us a message and we will respond as soon as possible.', 
+    mr: 'आम्हाला तुमच्याकडून ऐकायला आवडेल. आम्हाला एक संदेश पाठवा आणि आम्ही लवकरच प्रतिसाद देऊ.' 
+  },
+  form_name: { en: 'Your Name', mr: 'तुमचे नाव' },
+  form_email: { en: 'Your Email', mr: 'तुमचा ईमेल' },
+  form_subject: { en: 'Subject', mr: 'विषय' },
+  form_message: { en: 'Your Message', mr: 'तुमचा संदेश' },
+  form_send_message: { en: 'Send Message', mr: 'संदेश पाठवा' },
+  contact_info_title: { en: 'Contact Information', mr: 'संपर्क माहिती' },
+  contact_address: { en: 'Our Location', mr: 'आमचे ठिकाण' },
+  contact_address_text: { 
+    en: '123 Public Speaking St, Pune, Maharashtra, 411001', 
+    mr: '१२३ सार्वजनिक भाषण मार्ग, पुणे, महाराष्ट्र, ४११००१' 
+  },
+  contact_phone: { en: 'Call Us', mr: 'आम्हाला कॉल करा' },
+  contact_email: { en: 'Email Us', mr: 'आम्हाला ईमेल करा' },
+  form_placeholder_name: { en: 'Enter your name', mr: 'तुमचे नाव प्रविष्ट करा' },
+  form_placeholder_email: { en: 'Enter your email', mr: 'तुमचा ईमेल प्रविष्ट करा' },
+  form_placeholder_subject: { en: 'Regarding course inquiry...', mr: 'अभ्यासक्रमाच्या चौकशीबद्दल...' },
+  form_placeholder_message: { en: 'Type your message here...', mr: 'येथे तुमचा संदेश टाइप करा...' },
+  form_success: { en: 'Message sent successfully!', mr: 'संदेश यशस्वीरित्या पाठवला गेला!' },
+  form_error: { en: 'Failed to send message. Please try again.', mr: 'संदेश पाठवण्यात अयशस्वी. कृपया पुन्हा प्रयत्न करा!' },
+  
   // NEW Blog Section
   latest_blogs: { en: 'Our Latest Insights', mr: 'आमचे नवीनतम लेख' },
   blog_subtitle: { en: 'Knowledge and Communication Strategy from Our Experts', mr: 'आमच्या तज्ञांकडून संवाद आणि धोरणावरील ज्ञान' },
