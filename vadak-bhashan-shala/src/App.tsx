@@ -27,6 +27,12 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageCourses from "./pages/admin/ManageCourses";
 import ManageUsers from "./pages/admin/ManageUsers";
 
+// NEW IMPORTS for Admin Pages (Based on your file structure image)
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminProfile from "./pages/admin/AdminProfile";
+import ManageFeedback from "./pages/admin/ManageFeedback";
+import AdminSettings from "./pages/admin/AdminSettings"; // Assuming a placeholder for settings
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -52,11 +58,15 @@ const App = () => (
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/my-courses" element={<MyCourses />} />
 
-                {/* --- Admin Routes --- */}
+                {/* --- Admin Routes (UPDATED) --- */}
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
+                  <Route path="analytics" element={<AdminAnalytics />} /> {/* NEW ROUTE */}
                   <Route path="courses" element={<ManageCourses />} />
                   <Route path="users" element={<ManageUsers />} />
+                  <Route path="feedback" element={<ManageFeedback />} /> {/* NEW ROUTE */}
+                  <Route path="profile" element={<AdminProfile />} /> {/* NEW ROUTE */}
+                  <Route path="settings" element={<AdminSettings />} /> {/* NEW ROUTE (Placeholder) */}
                 </Route>
 
                 {/* --- Catch-all Route --- */}
