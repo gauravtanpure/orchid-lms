@@ -11,7 +11,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const { login, user } = useAuth();
+  const { login } = useAuth(); // No need to destructure 'user' here
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -23,17 +23,17 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
-      await login(email, password); 
-      
+      const loggedInUser = await login(email, password); // Capture the returned user object
+
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
 
-      // Redirect based on the user's role from the backend
-      if (user?.role === 'admin') {
+      // Redirect based on the role of the user object returned by the login function
+      if (loggedInUser.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/');
@@ -59,7 +59,7 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        
+
         <div className="text-center mb-8">
           <Link to="/" className="text-3xl font-heading font-bold text-primary">
             Orchid
@@ -73,7 +73,7 @@ const Login: React.FC = () => {
             <CardDescription>{t('loginDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Input */}
               <div className="space-y-2">
@@ -87,7 +87,7 @@ const Login: React.FC = () => {
                   required
                 />
               </div>
-              
+
               {/* Password Input */}
               <div className="space-y-2">
                 <Label htmlFor="password">{t('password')}</Label>

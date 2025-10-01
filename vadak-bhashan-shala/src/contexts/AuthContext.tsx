@@ -14,8 +14,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  isLoading: boolean; // Added loading state
-  login: (email: string, password: string) => Promise<void>;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<User>; // Change return type
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   isEnrolled: (courseId: string) => boolean;
@@ -28,11 +28,10 @@ const AUTH_STORAGE_KEY = 'orchid_auth_user';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isLoading, setIsLoading] = useState(true);
 
   const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
-  // Load user from localStorage on mount
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -42,11 +41,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     } catch (error) {
       console.error("Failed to parse user from localStorage:", error);
     } finally {
-      setIsLoading(false); // Done loading after attempting to read from storage
+      setIsLoading(false);
     }
   }, []);
 
-  // Save user to localStorage whenever it changes
   useEffect(() => {
     if (user) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
@@ -55,13 +53,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<User> => {
     try {
       const response = await axios.post(`${backendUrl}/api/auth/login`, { email, password });
       const { user } = response.data;
       localStorage.setItem('token', response.data.token);
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-      setUser(user);
+      setUser(user); // This is an async state update
+      return user; // Return the user object
     } catch (error) {
       throw new Error(error.response?.data?.msg || 'Login failed.');
     }
@@ -84,7 +83,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem(AUTH_STORAGE_KEY);
     setUser(null);
   };
-  
+
   const isEnrolled = (courseId: string) => {
     return user?.enrolledCourses?.includes(courseId) || false;
   };
