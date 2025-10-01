@@ -112,7 +112,7 @@ const MyCourses: React.FC = () => {
             <GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
             <h2 className="text-xl font-semibold mb-2">{t('noCoursesEnrolled')}</h2>
             <p className="text-muted-foreground mb-6">{t('startLearningJourney')}</p>
-            <Link to="/">
+            <Link to="/courses">
               <Button>{t('courses')}</Button>
             </Link>
           </div>
