@@ -17,7 +17,7 @@ import {
 
 // Mock auth context
 const useAuth = () => ({
-  user: { name: 'Admin User', email: 'admin@edutrack.com', role: 'admin' },
+  user: { name: 'Admin User', email: 'admin@orchid.com', role: 'admin' },
   isLoggedIn: true,
   logout: () => console.log('Logging out...'),
 });
@@ -52,7 +52,7 @@ const AdminLayout = () => {
               <LayoutDashboard className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">EduTrack</h1>
+              <h1 className="text-xl font-bold text-gray-900">Orchid</h1>
               <p className="text-xs text-gray-500">Admin Portal</p>
             </div>
           </div>
