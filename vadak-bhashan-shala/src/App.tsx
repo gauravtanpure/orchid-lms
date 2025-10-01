@@ -1,3 +1,5 @@
+// @/App.tsx
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,6 +16,8 @@ import Login from "./pages/Login";
 import Cart from "./pages/Cart";
 import MyCourses from "./pages/MyCourses";
 import NotFound from "./pages/NotFound";
+// 👇 IMPORT THE NEW DEDICATED SIGNUP COMPONENT
+import SignUp from "./pages/SignUp"; 
 
 // --- Admin-facing Pages (NEW) ---
 import AdminLayout from './pages/AdminLayout';
@@ -23,14 +27,14 @@ import ManageUsers from './pages/admin/ManageUsers';
 
 const queryClient = new QueryClient();
 
-// Mock SignUp component for routing (from your existing code)
+// 👇 REMOVE THE MOCK SignUp COMPONENT HERE
+/*
 const SignUp = () => {
     const { register, isLoggedIn } = useAuth();
     const navigate = useNavigate();
 
     React.useEffect(() => {
         if (!isLoggedIn) {
-            // Assuming register is imported and available from useAuth
             register('New Registered User', 'newuser@test.com', 'password123');
         }
         navigate('/');
@@ -42,6 +46,7 @@ const SignUp = () => {
         </div>
     );
 };
+*/
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -54,27 +59,24 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* --- Main User Routes --- */}
+                {/* --- Your Existing User Routes --- */}
                 <Route path="/" element={<Index />} />
-                {/* NEW: Routes for main navigation sections, pointing to Index */}
-                <Route path="/courses" element={<Index />} />
-                <Route path="/about" element={<Index />} />
-                <Route path="/blogs" element={<Index />} />
-                <Route path="/contact" element={<Index />} />
-                
                 <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
+                <Route path="/signup" element={<SignUp />} /> {/* Use the imported SignUp */}
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/my-courses" element={<MyCourses />} />
                 
-                {/* --- Admin Routes (Already present in uploaded App.tsx) --- */}
+                {/* --- NEW: Admin Routes --- */}
+                {/* This block defines all routes under the /admin path. */}
+                {/* The AdminLayout component acts as a wrapper and a guard, */}
+                {/* protecting all nested routes. */}
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="courses" element={<ManageCourses />} />
                   <Route path="users" element={<ManageUsers />} />
                 </Route>
 
-                {/* --- Catch-all Route --- */}
+                {/* --- Your Existing Catch-all Route --- */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

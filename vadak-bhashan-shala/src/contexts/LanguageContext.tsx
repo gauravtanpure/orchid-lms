@@ -1,3 +1,5 @@
+// @/contexts/LanguageContext.tsx
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 type Language = 'en' | 'mr';
@@ -77,6 +79,20 @@ const translations: Translations = {
   logging_in: { en: 'Signing in...', mr: 'साइन इन करत आहे...' },
   noAccount: { en: "Don't have an account?", mr: 'खाते नाही?' },
   logout: { en: 'Logout', mr: 'लॉगआउट' },
+
+  // --- NEW KEY FOR BACK BUTTON ---
+  backToHome: { en: 'Back to Home', mr: 'मुख्यपृष्ठावर परत जा' },
+  // --------------------------------
+
+  // Registration Keys
+  signupSubtitle: { en: 'Start your communication journey today', mr: 'आजच तुमचा संवाद प्रवास सुरू करा' },
+  signupDescription: { en: 'Create an account to get access to all courses', mr: 'सर्व अभ्यासक्रमांमध्ये प्रवेश मिळवण्यासाठी खाते तयार करा' },
+  registrationSuccessful: { en: 'Registration Successful', mr: 'नोंदणी यशस्वी' },
+  registrationFailed: { en: 'Registration Failed', mr: 'नोंदणी अयशस्वी' },
+  registrationRedirect: { en: 'Your account has been created. Please log in.', mr: 'तुमचे खाते तयार झाले आहे. कृपया लॉगिन करा.' },
+  haveAccount: { en: 'Already have an account?', mr: 'तुमचे आधीच खाते आहे?' },
+  registering: { en: 'Registering...', mr: 'नोंदणी करत आहे...' },
+  anUnexpectedErrorOccurred: { en: 'An unexpected error occurred.', mr: 'एक अनपेक्षित त्रुटी आली.' },
   
   // Cart
   emptyCart: { en: 'Your cart is empty', mr: 'तुमची कार्ट रिकामी आहे' },
@@ -90,7 +106,7 @@ const translations: Translations = {
   courseAdded: { en: 'Course Added!', mr: 'अभ्यासक्रम जोडला!' },
   addedToCart: { en: 'has been added to your cart', mr: 'तुमच्या कार्टमध्ये जोडला गेला आहे' },
   
-  // NEW Contact Section
+  // Contact Section
   contact_title: { en: 'Get In Touch', mr: 'संपर्क साधा' },
   contact_subtitle: { 
     en: 'We would love to hear from you. Send us a message and we will respond as soon as possible.', 
@@ -116,7 +132,7 @@ const translations: Translations = {
   form_success: { en: 'Message sent successfully!', mr: 'संदेश यशस्वीरित्या पाठवला गेला!' },
   form_error: { en: 'Failed to send message. Please try again.', mr: 'संदेश पाठवण्यात अयशस्वी. कृपया पुन्हा प्रयत्न करा!' },
   
-  // NEW Blog Section
+  // Blog Section
   latest_blogs: { en: 'Our Latest Insights', mr: 'आमचे नवीनतम लेख' },
   blog_subtitle: { en: 'Knowledge and Communication Strategy from Our Experts', mr: 'आमच्या तज्ञांकडून संवाद आणि धोरणावरील ज्ञान' },
   read_more: { en: 'Read Article', mr: 'लेख वाचा' },
@@ -135,6 +151,7 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [language, setLanguage] = useState<Language>('mr'); // Default to Marathi for target audience
   
   const t = (key: string): string => {
+    // Falls back to English if the current language key is missing, then falls back to the key itself
     return translations[key]?.[language] || translations[key]?.en || key;
   };
   

@@ -1,3 +1,5 @@
+// @/pages/SignUp.tsx
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -7,13 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, AlertTriangle, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react'; 
 
-const Login: React.FC = () => {
-  const { login } = useAuth();
+const SignUp: React.FC = () => {
+  const { register } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -24,23 +28,20 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      await login(email, password); 
+      await register(name, email, password); 
+      
       toast({
-        title: "Login Successful",
-        description: "Welcome back!",
+        title: t('registrationSuccessful'),
+        description: t('registrationRedirect'),
       });
 
-      if (email === 'admin@orchid.com') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      navigate('/login'); 
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
-      console.error('Login failed:', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('anUnexpectedErrorOccurred');
+      console.error('Registration failed:', errorMessage);
       toast({
-        title: "Login Failed",
+        title: t('registrationFailed'),
         description: errorMessage,
         variant: "destructive",
       });
@@ -56,44 +57,34 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        
+
         <div className="text-center mb-8">
           <Link to="/" className="text-3xl font-heading font-bold text-primary">
             Orchid
           </Link>
-          <p className="text-muted-foreground mt-2">{t('loginSubtitle')}</p>
+          <p className="text-muted-foreground mt-2">{t('signupSubtitle')}</p>
         </div>
 
         <Card className="shadow-xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-heading">{t('login')}</CardTitle>
-            <CardDescription>{t('loginDescription')}</CardDescription>
+            <CardTitle className="text-2xl font-heading">{t('signup')}</CardTitle>
+            <CardDescription>{t('signupDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* DEMO CREDENTIALS REMINDER (unchanged) */}
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-3 mb-4 rounded-md text-sm">
-              <div className="flex items-center">
-                <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <p className="font-medium">For Regular User (Frontend Test):</p>
-              </div>
-              <ul className="list-disc list-inside ml-5 mt-1 text-xs">
-                <li>Email: <strong>demo@user.com</strong></li>
-                <li>Password: <strong>(any non-empty password)</strong></li>
-              </ul>
-            </div>
-
-            <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-3 mb-4 rounded-md text-sm">
-              <div className="flex items-center">
-                <ShieldCheck className="h-4 w-4 mr-2 flex-shrink-0" />
-                <p className="font-medium">For Admin (Frontend Test):</p>
-              </div>
-              <ul className="list-disc list-inside ml-5 mt-1 text-xs">
-                <li>Email: <strong>admin@orchid.com</strong></li>
-                <li>Password: <strong>(any non-empty password)</strong></li>
-              </ul>
-            </div>
-            
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name Input */}
+              <div className="space-y-2">
+                <Label htmlFor="name">{t('form_name')}</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  placeholder={t('form_placeholder_name')}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+
               {/* Email Input */}
               <div className="space-y-2">
                 <Label htmlFor="email">{t('email')}</Label>
@@ -151,16 +142,16 @@ const Login: React.FC = () => {
                   className="w-1/2"
                   disabled={isLoading}
                 >
-                  {isLoading ? t('logging_in') : t('login')}
+                  {isLoading ? t('registering') : t('signup')}
                 </Button>
               </div>
             </form>
 
             <div className="mt-6 text-center space-y-2">
               <p className="text-sm text-muted-foreground">
-                {t('noAccount')}{' '}
-                <Link to="/signup" className="text-primary hover:underline font-medium">
-                  {t('signup')}
+                {t('haveAccount')}{' '}
+                <Link to="/login" className="text-primary hover:underline font-medium">
+                  {t('login')}
                 </Link>
               </p>
             </div>
@@ -171,4 +162,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default SignUp;

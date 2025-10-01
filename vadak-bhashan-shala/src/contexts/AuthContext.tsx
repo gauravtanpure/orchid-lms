@@ -1,12 +1,20 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
+// ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL FASTAPI/MONGO ENDPOINTS
+const API_BASE_URL = 'http://localhost:8000/api/v1/auth'; 
+
 interface User {
   id: string;
   name: string;
   email: string;
   enrolledCourses: string[];
-  profileImage: string;
-  role: 'user' | 'admin'; // Add user role
+  role: 'user' | 'admin'; 
+}
+
+// Interface for API responses (may include token)
+interface LoginResponse {
+    token: string;
+    user: User;
 }
 
 interface AuthContextType {
@@ -22,6 +30,24 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = 'orchid_auth_user';
+
+// --- Hardcoded Demo Users for Frontend Testing ---
+const mockAdmin: User = {
+    id: 'admin-001',
+    name: 'Admin User',
+    email: 'admin@orchid.com',
+    enrolledCourses: [],
+    role: 'admin',
+};
+
+const mockUser: User = {
+    id: 'user-001',
+    name: 'Demo User',
+    email: 'demo@user.com',
+    enrolledCourses: ['course-101'],
+    role: 'user',
+};
+// ------------------------------------------------
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
@@ -43,51 +69,74 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [user]);
 
   const login = async (email: string, password: string) => {
-    await new Promise(resolve => setTimeout(resolve, 500)); 
+    // 1. HARDCODED FRONTEND TEST LOGIN
+    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
 
-    // Admin Credentials Check
-    if (email === 'admin@orchid.com' && password && password.length > 0) {
-      const mockAdmin: User = {
-        id: 'admin-001',
-        name: 'Admin User',
-        email: email,
-        enrolledCourses: [], // Admin doesn't enroll in courses
-        profileImage: 'https://i.pravatar.cc/150?img=68', // Admin avatar
-        role: 'admin', // Set role to admin
-      };
-      setUser(mockAdmin);
-      return; // Stop execution for admin
+    if (email === mockAdmin.email && password && password.length > 0) {
+        setUser(mockAdmin);
+        return; 
     }
     
-    // Regular Demo User Credentials Check
-    if (email === 'demo@user.com' && password && password.length > 0) {
-      const mockUser: User = {
-        id: 'user-001',
-        name: 'Demo User',
-        email: email,
-        enrolledCourses: ['course-101'],
-        profileImage: 'https://i.pravatar.cc/150?img=1',
-        role: 'user', // Set role to user
-      };
-      setUser(mockUser);
-      return; // Stop execution for regular user
+    if (email === mockUser.email && password && password.length > 0) {
+        setUser(mockUser);
+        return; 
     } 
     
-    throw new Error("Invalid credentials. Use admin@orchid.com or demo@user.com.");
+    // 2. API BACKEND LOGIN
+    try {
+      const response = await fetch(`${API_BASE_URL}/login`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'API Login failed.' }));
+        // If API fails, check if it's due to invalid hardcoded credentials 
+        // (if the user tried the hardcoded creds but API still ran)
+        if (errorData.detail && !errorData.detail.includes('Invalid credentials')) {
+            throw new Error(errorData.detail);
+        }
+        
+        // Final fallback error if both hardcoded and API login fail
+        throw new Error("Invalid credentials or user not found.");
+      }
+
+      const userData: LoginResponse = await response.json();
+      // Assume API returns a User object structure that matches
+      setUser(userData.user); 
+
+    } catch (error) {
+      // Throw the error to be caught by Login.tsx
+      throw error; 
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // 1. HARDCODED: If someone tries to register with a hardcoded email, prevent it
+    if (email === mockAdmin.email || email === mockUser.email) {
+        throw new Error("This email is reserved for demo purposes.");
+    }
+    
+    // 2. API BACKEND REGISTRATION
+    try {
+      const response = await fetch(`${API_BASE_URL}/register`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
 
-    const mockNewUser: User = {
-      id: `user-${Date.now()}`, 
-      name: name,
-      email: email,
-      enrolledCourses: [],
-      profileImage: 'https://i.pravatar.cc/150?img=2',
-      role: 'user', // New users are always 'user'
-    };
-    setUser(mockNewUser);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Registration failed due to network or server error.' }));
+        throw new Error(errorData.detail || 'Registration failed. Try a different email.');
+      }
+      
+      // We assume the API returns a success message or the new user object (but not auto-login)
+      await response.json(); // Consume the response
+      
+    } catch (error) {
+      throw error;
+    }
   };
 
   const logout = () => {
