@@ -1,3 +1,4 @@
+// /frontend/src/pages/Login.tsx
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -7,10 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, AlertTriangle, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -25,12 +26,14 @@ const Login: React.FC = () => {
     
     try {
       await login(email, password); 
+      
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
 
-      if (email === 'admin@orchid.com') {
+      // Redirect based on the user's role from the backend
+      if (user?.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/');
@@ -70,28 +73,6 @@ const Login: React.FC = () => {
             <CardDescription>{t('loginDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* DEMO CREDENTIALS REMINDER (unchanged) */}
-            <div className="bg-yellow-50 border-l-4 border-yellow-500 text-yellow-800 p-3 mb-4 rounded-md text-sm">
-              <div className="flex items-center">
-                <AlertTriangle className="h-4 w-4 mr-2 flex-shrink-0" />
-                <p className="font-medium">For Regular User (Frontend Test):</p>
-              </div>
-              <ul className="list-disc list-inside ml-5 mt-1 text-xs">
-                <li>Email: <strong>demo@user.com</strong></li>
-                <li>Password: <strong>(any non-empty password)</strong></li>
-              </ul>
-            </div>
-
-            <div className="bg-blue-50 border-l-4 border-blue-500 text-blue-800 p-3 mb-4 rounded-md text-sm">
-              <div className="flex items-center">
-                <ShieldCheck className="h-4 w-4 mr-2 flex-shrink-0" />
-                <p className="font-medium">For Admin (Frontend Test):</p>
-              </div>
-              <ul className="list-disc list-inside ml-5 mt-1 text-xs">
-                <li>Email: <strong>admin@orchid.com</strong></li>
-                <li>Password: <strong>(any non-empty password)</strong></li>
-              </ul>
-            </div>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Input */}
@@ -135,11 +116,11 @@ const Login: React.FC = () => {
                 </div>
               </div>
 
-              {/* NEW: Button Layout side-by-side */}
+              {/* Button Layout side-by-side */}
               <div className="flex space-x-4 pt-2">
                 <Button
                   type="button"
-                  variant="outline" // Use outline variant for back button
+                  variant="outline"
                   onClick={handleBack}
                   className="w-1/2"
                 >

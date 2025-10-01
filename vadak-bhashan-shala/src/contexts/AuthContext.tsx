@@ -1,20 +1,14 @@
+// /frontend/src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import axios from 'axios';
 
-// ⚠️ IMPORTANT: REPLACE WITH YOUR ACTUAL FASTAPI/MONGO ENDPOINTS
-const API_BASE_URL = 'http://localhost:8000/api/v1/auth'; 
-
+// Interface for User and API response
 interface User {
   id: string;
   name: string;
   email: string;
-  enrolledCourses: string[];
-  role: 'user' | 'admin'; 
-}
-
-// Interface for API responses (may include token)
-interface LoginResponse {
-    token: string;
-    user: User;
+  role: 'user' | 'admin';
+  enrolledCourses?: string[];
 }
 
 interface AuthContextType {
@@ -31,24 +25,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = 'orchid_auth_user';
 
-// --- Hardcoded Demo Users for Frontend Testing ---
-const mockAdmin: User = {
-    id: 'admin-001',
-    name: 'Admin User',
-    email: 'admin@orchid.com',
-    enrolledCourses: [],
-    role: 'admin',
-};
-
-const mockUser: User = {
-    id: 'user-001',
-    name: 'Demo User',
-    email: 'demo@user.com',
-    enrolledCourses: ['course-101'],
-    role: 'user',
-};
-// ------------------------------------------------
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
@@ -60,6 +36,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   });
 
+  const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
+
   useEffect(() => {
     if (user) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
@@ -69,89 +47,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [user]);
 
   const login = async (email: string, password: string) => {
-    // 1. HARDCODED FRONTEND TEST LOGIN
-    await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-
-    if (email === mockAdmin.email && password && password.length > 0) {
-        setUser(mockAdmin);
-        return; 
-    }
-    
-    if (email === mockUser.email && password && password.length > 0) {
-        setUser(mockUser);
-        return; 
-    } 
-    
-    // 2. API BACKEND LOGIN
     try {
-      const response = await fetch(`${API_BASE_URL}/login`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'API Login failed.' }));
-        // If API fails, check if it's due to invalid hardcoded credentials 
-        // (if the user tried the hardcoded creds but API still ran)
-        if (errorData.detail && !errorData.detail.includes('Invalid credentials')) {
-            throw new Error(errorData.detail);
-        }
-        
-        // Final fallback error if both hardcoded and API login fail
-        throw new Error("Invalid credentials or user not found.");
-      }
-
-      const userData: LoginResponse = await response.json();
-      // Assume API returns a User object structure that matches
-      setUser(userData.user); 
-
+      const response = await axios.post(`${backendUrl}/api/auth/login`, { email, password });
+      const { user } = response.data;
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      setUser(user);
     } catch (error) {
-      // Throw the error to be caught by Login.tsx
-      throw error; 
+      throw new Error(error.response?.data?.msg || 'Login failed.');
     }
   };
 
   const register = async (name: string, email: string, password: string) => {
-    // 1. HARDCODED: If someone tries to register with a hardcoded email, prevent it
-    if (email === mockAdmin.email || email === mockUser.email) {
-        throw new Error("This email is reserved for demo purposes.");
-    }
-    
-    // 2. API BACKEND REGISTRATION
     try {
-      const response = await fetch(`${API_BASE_URL}/register`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Registration failed due to network or server error.' }));
-        throw new Error(errorData.detail || 'Registration failed. Try a different email.');
-      }
-      
-      // We assume the API returns a success message or the new user object (but not auto-login)
-      await response.json(); // Consume the response
-      
+      const response = await axios.post(`${backendUrl}/api/auth/register`, { name, email, password });
+      const { user } = response.data;
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
+      setUser(user);
     } catch (error) {
-      throw error;
+      throw new Error(error.response?.data?.msg || 'Registration failed.');
     }
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem(AUTH_STORAGE_KEY);
     setUser(null);
   };
   
   const isEnrolled = (courseId: string) => {
-    return user?.enrolledCourses.includes(courseId) || false;
+    return user?.enrolledCourses?.includes(courseId) || false;
   };
 
   const enrollCourse = (courseId: string) => {
-    if (user && !user.enrolledCourses.includes(courseId)) {
+    if (user && !user.enrolledCourses?.includes(courseId)) {
       setUser({
         ...user,
-        enrolledCourses: [...user.enrolledCourses, courseId],
+        enrolledCourses: [...(user.enrolledCourses || []), courseId],
       });
     }
   };
