@@ -33,16 +33,34 @@ const translations: Translations = {
   exploreMarathi: { en: 'Explore Marathi Courses', mr: 'मराठी अभ्यासक्रम पहा' },
   exploreEnglish: { en: 'Explore English Courses', mr: 'इंग्रजी अभ्यासक्रम पहा' },
   
-  // Course Categories
+  // Category Section
+  browse_by_category: { en: 'Browse by Category', mr: 'श्रेणीनुसार अभ्यासक्रम पहा' },
+  political: { en: 'Political', mr: 'राजकीय' },
+  public_speaking: { en: 'Public Speaking', mr: 'सार्वजनिक भाषण' },
+  course_grid_subtitle: {
+    en: 'Choose from our comprehensive selection of courses in communication and political skills.',
+    mr: 'संवाद आणि राजकीय कौशल्यांमधील आमच्या सर्वसमावेशक अभ्यासक्रमांमधून निवडा.'
+  },
+  
+  // Course Categories 
   marathiCourses: { en: 'Marathi Speaking', mr: 'मराठी भाषण' },
   englishCourses: { en: 'English Speaking', mr: 'इंग्रजी भाषण' },
-  publicSpeaking: { en: 'Public Speaking', mr: 'सार्वजनिक भाषण' },
   presentationSkills: { en: 'Presentation Skills', mr: 'सादरीकरण कौशल्ये' },
   
   // Course Actions
   addToCart: { en: 'Add to Cart', mr: 'कार्टमध्ये जोडा' },
   buyNow: { en: 'Buy Now', mr: 'आता खरेदी करा' },
   viewDetails: { en: 'View Details', mr: 'तपशील पहा' },
+  goToCourse: { en: 'Go to Course', mr: 'अभ्यासक्रमावर जा' },
+  
+  // Course Details
+  by: { en: 'by', mr: 'द्वारे' },
+  reviews: { en: 'reviews', mr: 'पुनरावलोकने' },
+  
+  // Levels
+  level_beginner: { en: 'Beginner', mr: 'प्राथमिक' },
+  level_intermediate: { en: 'Intermediate', mr: 'मध्यम' },
+  level_advanced: { en: 'Advanced', mr: 'प्रगत' },
   
   // Features
   expertInstructors: { en: 'Expert Instructors', mr: 'तज्ञ शिक्षक' },
@@ -79,10 +97,11 @@ const translations: Translations = {
   logging_in: { en: 'Signing in...', mr: 'साइन इन करत आहे...' },
   noAccount: { en: "Don't have an account?", mr: 'खाते नाही?' },
   logout: { en: 'Logout', mr: 'लॉगआउट' },
+  loginRequired: { en: 'Login Required', mr: 'लॉगिन आवश्यक' },
+  loginRequiredDescription: { en: 'Please login to add courses to your cart.', mr: 'कृपया अभ्यासक्रम कार्टमध्ये जोडण्यासाठी लॉगिन करा.' },
 
-  // --- NEW KEY FOR BACK BUTTON ---
+  // Back Button
   backToHome: { en: 'Back to Home', mr: 'मुख्यपृष्ठावर परत जा' },
-  // --------------------------------
 
   // Registration Keys
   signupSubtitle: { en: 'Start your communication journey today', mr: 'आजच तुमचा संवाद प्रवास सुरू करा' },
@@ -105,6 +124,13 @@ const translations: Translations = {
   proceedToCheckout: { en: 'Proceed to Checkout', mr: 'चेकआउटवर जा' },
   courseAdded: { en: 'Course Added!', mr: 'अभ्यासक्रम जोडला!' },
   addedToCart: { en: 'has been added to your cart', mr: 'तुमच्या कार्टमध्ये जोडला गेला आहे' },
+  
+  // My Courses Page
+  noCoursesEnrolled: { en: "You haven't enrolled in any courses yet.", mr: 'तुम्ही अद्याप कोणत्याही अभ्यासक्रमात नोंदणी केलेली नाही.' },
+  startLearningJourney: { en: 'Start your learning journey by exploring our catalog.', mr: 'आमचा कॅटलॉग एक्सप्लोर करून तुमचा शिकण्याचा प्रवास सुरू करा.' },
+  progress: { en: 'Progress', mr: 'प्रगती' },
+  continueLearning: { en: 'Continue Learning', mr: 'शिकणे सुरू ठेवा' },
+  viewCertificate: { en: 'View Certificate', mr: 'प्रमाणपत्र पहा' },
   
   // Contact Section
   contact_title: { en: 'Get In Touch', mr: 'संपर्क साधा' },
@@ -148,10 +174,9 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('mr'); // Default to Marathi for target audience
+  const [language, setLanguage] = useState<Language>('mr'); // Default to Marathi
   
   const t = (key: string): string => {
-    // Falls back to English if the current language key is missing, then falls back to the key itself
     return translations[key]?.[language] || translations[key]?.en || key;
   };
   

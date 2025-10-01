@@ -14,6 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
+  isLoading: boolean; // Added loading state
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -26,18 +27,26 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const AUTH_STORAGE_KEY = 'orchid_auth_user';
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error("Failed to parse user from localStorage:", error);
-      return null;
-    }
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading true
 
   const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
+  // Load user from localStorage on mount
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      }
+    } catch (error) {
+      console.error("Failed to parse user from localStorage:", error);
+    } finally {
+      setIsLoading(false); // Done loading after attempting to read from storage
+    }
+  }, []);
+
+  // Save user to localStorage whenever it changes
   useEffect(() => {
     if (user) {
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
@@ -93,6 +102,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     <AuthContext.Provider value={{
       user,
       isLoggedIn: !!user,
+      isLoading,
       login,
       register,
       logout,

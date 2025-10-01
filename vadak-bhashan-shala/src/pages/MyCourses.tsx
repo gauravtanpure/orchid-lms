@@ -1,30 +1,40 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Clock, BookOpen, ChevronRight, GraduationCap } from 'lucide-react';
+import { Clock, BookOpen, ChevronRight, GraduationCap, Loader2 } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
-// --- Mock Course Data ---
-// Includes the course-101 which is pre-enrolled in AuthContext.tsx, 
-// and a course-999 with a price of 0 (free) to test the purchase flow.
+// Mock Course Data
 const mockCourses = [
   {
     id: 'course-101',
-    title: 'Advanced Public Speaking for Professionals',
-    instructor: 'Dr. Anjali Deshmukh',
+    title: {
+      en: 'Advanced Public Speaking for Professionals',
+      mr: 'व्यावसायिकांसाठी प्रगत सार्वजनिक भाषण'
+    },
+    instructor: {
+      en: 'Dr. Anjali Deshmukh',
+      mr: 'डॉ. अंजली देशमुख'
+    },
     duration: '20',
     category: 'marathi',
     thumbnail: 'https://images.unsplash.com/photo-1549490349-f06534b12285?fit=crop&w=800&q=80',
     progress: '50%',
   },
   {
-    id: 'course-999', // This is the new free course ID
-    title: 'Free Intro to Communication Skills',
-    instructor: 'Ms. Priya Patil',
+    id: 'course-999',
+    title: {
+      en: 'Free Intro to Communication Skills',
+      mr: 'संवाद कौशल्यांचा मोफत परिचय'
+    },
+    instructor: {
+      en: 'Ms. Priya Patil',
+      mr: 'सौ. प्रिया पाटील'
+    },
     duration: '5',
     category: 'english',
     thumbnail: 'https://images.unsplash.com/photo-1510511459019-5be77da9cfa2?fit=crop&w=800&q=80',
@@ -32,8 +42,14 @@ const mockCourses = [
   },
   {
     id: 'course-202',
-    title: 'English Fluency: From Basics to Business',
-    instructor: 'Mr. Rohan Kulkarni',
+    title: {
+      en: 'English Fluency: From Basics to Business',
+      mr: 'इंग्रजी प्रवाहीता: मूलभूत गोष्टींपासून व्यवसायापर्यंत'
+    },
+    instructor: {
+      en: 'Mr. Rohan Kulkarni',
+      mr: 'श्री. रोहन कुलकर्णी'
+    },
     duration: '35',
     category: 'english',
     thumbnail: 'https://images.unsplash.com/photo-1546946022-793db5f8f8ed?fit=crop&w=800&q=80',
@@ -41,8 +57,14 @@ const mockCourses = [
   },
   {
     id: 'course-303',
-    title: 'The Art of Persuasion and Negotiation',
-    instructor: 'Ms. Priya Patil',
+    title: {
+      en: 'The Art of Persuasion and Negotiation',
+      mr: 'प्रेरणा आणि वाटाघाटीची कला'
+    },
+    instructor: {
+      en: 'Ms. Priya Patil',
+      mr: 'सौ. प्रिया पाटील'
+    },
     duration: '15',
     category: 'english',
     thumbnail: 'https://images.unsplash.com/photo-1524178232363-2ce9bc237c7f?fit=crop&w=800&q=80',
@@ -51,17 +73,23 @@ const mockCourses = [
 ];
 
 const MyCourses: React.FC = () => {
-  const { user, isLoggedIn } = useAuth();
-  const { t } = useLanguage();
+  const { user, isLoggedIn, isLoading } = useAuth();
+  const { t, language } = useLanguage();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isLoggedIn) {
-    // Redirect unauthenticated users
     return <Navigate to="/login" replace />;
   }
   
-  // Filter mock courses by user's enrolledCourses list
   const enrolledCourses = mockCourses.filter(course => 
-    user?.enrolledCourses.includes(course.id)
+    user?.enrolledCourses?.includes(course.id)
   );
 
   const getCourseProgressColor = (progress: string) => {
@@ -82,8 +110,8 @@ const MyCourses: React.FC = () => {
         {enrolledCourses.length === 0 ? (
           <div className="text-center py-16 border border-border rounded-lg bg-card shadow-sm">
             <GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">You haven't enrolled in any courses yet.</h2>
-            <p className="text-muted-foreground mb-6">Start your learning journey by exploring our catalog.</p>
+            <h2 className="text-xl font-semibold mb-2">{t('noCoursesEnrolled')}</h2>
+            <p className="text-muted-foreground mb-6">{t('startLearningJourney')}</p>
             <Link to="/">
               <Button>{t('courses')}</Button>
             </Link>
@@ -96,24 +124,26 @@ const MyCourses: React.FC = () => {
                   <div className="relative aspect-video overflow-hidden rounded-t-lg">
                     <img 
                       src={course.thumbnail} 
-                      alt={course.title}
+                      alt={typeof course.title === 'object' ? course.title[language] : course.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-3 right-3 bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
-                      {course.category === 'marathi' ? 'मराठी' : 'English'}
+                      {course.category === 'marathi' ? t('marathiCourses') : t('englishCourses')}
                     </div>
                   </div>
                   
                   <div className="p-4">
                     <h3 className="text-lg font-semibold text-card-foreground line-clamp-2 mb-2">
-                      {course.title}
+                      {typeof course.title === 'object' ? course.title[language] : course.title}
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-3">by {course.instructor}</p>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      {t('by')} {typeof course.instructor === 'object' ? course.instructor[language] : course.instructor}
+                    </p>
 
                     {/* Progress Bar */}
                     <div className="space-y-1 mb-4">
                       <div className="flex justify-between text-xs font-medium text-muted-foreground">
-                        <span>Progress</span>
+                        <span>{t('progress')}</span>
                         <span className="text-card-foreground">{course.progress}</span>
                       </div>
                       <div className="w-full bg-muted-foreground/20 rounded-full h-2">
@@ -125,9 +155,10 @@ const MyCourses: React.FC = () => {
                     </div>
                     
                     <div className="flex items-center justify-end">
-                      <Link to={`/course/${course.id}`}> {/* Link to view course details/content */}
+                      <Link to={`/course/${course.id}`}>
                         <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">
-                          {course.progress === '100%' ? 'View Certificate' : 'Continue Learning'} <ChevronRight className="w-4 h-4 ml-1" />
+                          {course.progress === '100%' ? t('viewCertificate') : t('continueLearning')} 
+                          <ChevronRight className="w-4 h-4 ml-1" />
                         </Button>
                       </Link>
                     </div>

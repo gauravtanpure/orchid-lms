@@ -1,11 +1,13 @@
 import React from 'react';
-import { Star, Clock, Users, ShoppingCart, Eye, CheckCircle } from 'lucide-react'; // Added CheckCircle
+import { Star, Clock, Users, ShoppingCart, Eye, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useCart } from '@/contexts/CartContext';
-import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom'; // Import Link
+import { Link } from 'react-router-dom';
+
+export type CourseCategory = 'public_speaking' | 'political';
 
 interface CourseCardProps {
   id: string;
@@ -18,7 +20,7 @@ interface CourseCardProps {
   duration: string;
   studentCount: number;
   thumbnail: string;
-  category: 'marathi' | 'english';
+  category: CourseCategory;
   level: 'beginner' | 'intermediate' | 'advanced';
   description: string;
 }
@@ -41,23 +43,55 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const { t, language } = useLanguage();
   const { addToCart } = useCart();
   const { toast } = useToast();
-  const { isLoggedIn, isEnrolled } = useAuth(); // Use auth hooks
+  const { isLoggedIn, user } = useAuth();
   
-  const enrolled = isLoggedIn && isEnrolled(id); // Check enrollment status
+  // Debug logs
+  console.log('CourseCard Debug:', {
+    isLoggedIn,
+    user,
+    addToCart: typeof addToCart,
+    toast: typeof toast,
+  });
+  
+  const enrolled = isLoggedIn && user?.enrolledCourses?.includes(id);
 
   const handleAddToCart = () => {
-    addToCart({
-      id,
-      title,
-      price,
-      image: thumbnail,
-      instructor,
-      language: category === 'marathi' ? 'mr' : 'en'
-    });
-    toast({
-      title: t('courseAdded'),
-      description: `${title} ${t('addedToCart')}`,
-    });
+    console.log('Add to Cart clicked!', { id, title, isLoggedIn });
+    
+    if (!isLoggedIn) {
+      console.log('User not logged in, showing toast');
+      toast({
+        title: t('loginRequired'),
+        description: t('loginRequiredDescription'),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Adding course to cart...');
+    try {
+      addToCart({ 
+        id, 
+        title, 
+        price, 
+        image: thumbnail, 
+        instructor,
+        language: language === 'mr' ? 'mr' : 'en'
+      });
+      
+      console.log('Course added successfully!');
+      toast({
+        title: t('courseAdded'),
+        description: `${title} ${t('addedToCart')}`,
+      });
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add course to cart',
+        variant: "destructive",
+      });
+    }
   };
 
   const getLevelColor = (level: string) => {
@@ -70,7 +104,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
   };
 
   const formatPrice = (price: number) => {
-    return language === 'mr' ? `₹${price}` : `₹${price}`;
+    return `₹${price.toLocaleString('en-IN')}`;
   };
 
   return (
@@ -84,21 +118,25 @@ const CourseCard: React.FC<CourseCardProps> = ({
         />
         <div className="absolute top-3 left-3">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${getLevelColor(level)}`}>
-            {level.charAt(0).toUpperCase() + level.slice(1)}
+            {t(`level_${level}`)}
           </span>
         </div>
         <div className="absolute top-3 right-3">
-          <span className="bg-primary text-primary-foreground px-2 py-1 rounded-full text-xs font-medium">
-            {category === 'marathi' ? 'मराठी' : 'English'}
+          <span className={`px-2 py-1 rounded-full text-xs font-medium 
+             ${category === 'political' ? 'bg-red-500 text-white' : 'bg-primary text-primary-foreground'}`}
+          >
+            {t(category)}
           </span>
         </div>
         
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-          <Button size="sm" variant="outline" className="bg-white/10 backdrop-blur-sm border-white text-white hover:bg-white hover:text-primary">
-            <Eye className="w-4 h-4 mr-2" />
-            {t('viewDetails')}
-          </Button>
+          <Link to={`/courses/${id}`}> 
+            <Button size="sm" variant="outline" className="bg-white/10 backdrop-blur-sm border-white text-white hover:bg-white hover:text-primary">
+              <Eye className="w-4 h-4 mr-2" />
+              {t('viewDetails')}
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -108,7 +146,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
           <h3 className="text-lg font-semibold text-card-foreground group-hover:text-primary transition-colors duration-200 line-clamp-2 mb-2">
             {title}
           </h3>
-          <p className="text-sm text-muted-foreground">by {instructor}</p>
+          <p className="text-sm text-muted-foreground">{t('by')} {instructor}</p>
         </div>
 
         <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
@@ -121,7 +159,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
             <span className="text-sm font-medium ml-1">{rating}</span>
           </div>
-          <span className="text-sm text-muted-foreground">({reviewCount} reviews)</span>
+          <span className="text-sm text-muted-foreground">({reviewCount} {t('reviews')})</span>
         </div>
 
         {/* Course Meta */}
@@ -153,14 +191,14 @@ const CourseCard: React.FC<CourseCardProps> = ({
         {/* Action Buttons */}
         <div className="flex gap-2 mt-4">
           {enrolled ? (
-            <Link to={`/my-courses`}> {/* Link to /my-courses or course detail page */}
-                <Button 
+            <Link to={`/my-courses`} className="w-full"> 
+              <Button 
                 size="sm" 
                 className="w-full btn-success"
-                >
+              >
                 <CheckCircle className="w-4 h-4 mr-2" />
                 {t('goToCourse')}
-                </Button>
+              </Button>
             </Link>
           ) : (
             <>

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export interface Course {
   id: string;
@@ -27,34 +27,58 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
 
+  // Debug: Log cart state changes
+  useEffect(() => {
+    console.log('Cart items updated:', items);
+  }, [items]);
+
   const addToCart = (course: Course) => {
-    setItems(prev => {
-      const existing = prev.find(item => item.id === course.id);
-      if (existing) {
-        return prev.map(item =>
-          item.id === course.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        );
-      }
-      return [...prev, { ...course, quantity: 1 }];
-    });
+    console.log('CartContext.addToCart called with:', course);
+    
+    try {
+      setItems(prev => {
+        const existing = prev.find(item => item.id === course.id);
+        
+        if (existing) {
+          console.log('Course already in cart, increasing quantity');
+          return prev.map(item =>
+            item.id === course.id
+              ? { ...item, quantity: item.quantity + 1 }
+              : item
+          );
+        }
+        
+        console.log('Adding new course to cart');
+        return [...prev, { ...course, quantity: 1 }];
+      });
+      
+      console.log('Cart update successful');
+    } catch (error) {
+      console.error('Error in addToCart:', error);
+      throw error;
+    }
   };
 
   const removeFromCart = (courseId: string) => {
+    console.log('Removing course from cart:', courseId);
     setItems(prev => prev.filter(item => item.id !== courseId));
   };
 
   const clearCart = () => {
+    console.log('Clearing cart');
     setItems([]);
   };
 
   const getTotalItems = () => {
-    return items.reduce((total, item) => total + item.quantity, 0);
+    const total = items.reduce((total, item) => total + item.quantity, 0);
+    console.log('Total items:', total);
+    return total;
   };
 
   const getTotalPrice = () => {
-    return items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    const total = items.reduce((total, item) => total + (item.price * item.quantity), 0);
+    console.log('Total price:', total);
+    return total;
   };
 
   return (
