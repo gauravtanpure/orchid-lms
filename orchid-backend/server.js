@@ -4,13 +4,15 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const authRoutes = require('./src/routes/authRoutes');
-
+const courseRoutes = require('./src/routes/courseRoutes'); // <-- IMPORT
+const couponRoutes = require('./src/routes/couponRoutes'); 
+const userRoutes = require('./src/routes/userRoutes');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(express.json()); // Allows the server to accept JSON data in the body
-app.use(cors()); // Enables CORS for all routes
+app.use(express.json());
+app.use(cors());
 
 // Database Connection
 mongoose.connect(process.env.MONGODB_URI)
@@ -19,6 +21,9 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes); // <-- USE NEW ROUTES
+app.use('/api/coupons', couponRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('Orchid API is running!');
