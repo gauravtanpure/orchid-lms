@@ -7,6 +7,7 @@ const authRoutes = require('./src/routes/authRoutes');
 const courseRoutes = require('./src/routes/courseRoutes'); // <-- IMPORT
 const couponRoutes = require('./src/routes/couponRoutes'); 
 const userRoutes = require('./src/routes/userRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 

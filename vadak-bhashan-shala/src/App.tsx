@@ -24,7 +24,13 @@ import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageCourses from "./pages/admin/ManageCourses";
+import ManageUsers from "./pages/admin/ManageUsers";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import ManageFeedback from "./pages/admin/ManageFeedback";
+import AdminProfile from "./pages/admin/AdminProfile";
+import AdminSettings from "./pages/admin/AdminSettings";
 
+// Correctly create the QueryClient instance
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -50,6 +56,11 @@ const App = () => (
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="courses" element={<ManageCourses />} />
+                  <Route path="users" element={<ManageUsers />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
+                  <Route path="feedback" element={<ManageFeedback />} />
+                  <Route path="profile" element={<AdminProfile />} />
+                  <Route path="settings" element={<AdminSettings />} />
                 </Route>
 
                 {/* --- Catch-all --- */}
@@ -64,4 +75,3 @@ const App = () => (
 );
 
 export default App;
-
