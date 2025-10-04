@@ -4,9 +4,10 @@ const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const authRoutes = require('./src/routes/authRoutes');
-const courseRoutes = require('./src/routes/courseRoutes'); // <-- IMPORT
-const couponRoutes = require('./src/routes/couponRoutes'); 
+const courseRoutes = require('./src/routes/courseRoutes');
+const couponRoutes = require('./src/routes/couponRoutes');
 const userRoutes = require('./src/routes/userRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -22,9 +23,10 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/courses', courseRoutes); // <-- USE NEW ROUTES
+app.use('/api/courses', courseRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.get('/', (req, res) => {
   res.send('Orchid API is running!');
