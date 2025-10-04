@@ -1,5 +1,5 @@
 // /frontend/src/pages/admin/ManageUsers.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,40 +47,45 @@ const fetchAllUsers = async (token: string | null): Promise<User[]> => {
 
 // --- Main Component ---
 const ManageUsers: React.FC = () => {
-    const { user, isLoggedIn } = useAuth();
+    // Assuming useAuth provides an isLoading state
+    const { user, isLoggedIn, isLoading: isAuthLoading } = useAuth();
     const navigate = useNavigate();
     
-    // Get token from localStorage
     const token = localStorage.getItem('token');
 
     console.log('👤 Current user:', user); // DEBUG
     console.log('🎫 Token from localStorage:', token ? 'EXISTS' : 'MISSING'); // DEBUG
     console.log('🔐 Is logged in:', isLoggedIn); // DEBUG
+    console.log('⏳ Is auth loading:', isAuthLoading); // DEBUG
 
-    // Check authentication and authorization
-    React.useEffect(() => {
-        if (!isLoggedIn || !user) {
-            console.warn('⚠️ Not logged in, redirecting to login');
-            navigate('/login');
-            return;
+    // Check authentication and authorization after auth state is stable
+    useEffect(() => {
+        // Only run this logic after authentication check is complete
+        if (!isAuthLoading) {
+            if (!isLoggedIn || !user) {
+                console.warn('⚠️ Not logged in, redirecting to login');
+                navigate('/login');
+                return;
+            }
+            
+            if (user.role !== 'admin') {
+                console.warn('⚠️ Not an admin, redirecting to home');
+                navigate('/');
+                return;
+            }
         }
-        
-        if (user.role !== 'admin') {
-            console.warn('⚠️ Not admin, redirecting to home');
-            navigate('/');
-            return;
-        }
-    }, [isLoggedIn, user, navigate]);
+    }, [isAuthLoading, isLoggedIn, user, navigate]);
 
-    const { data: users = [], isLoading, isError, error } = useQuery<User[], Error>({
+    const { data: users = [], isLoading: isUsersLoading, isError, error } = useQuery<User[], Error>({
         queryKey: ['users'],
         queryFn: () => fetchAllUsers(token),
-        enabled: !!token && !!user && user.role === 'admin',
+        // Enable the query only when auth is not loading and user is an admin
+        enabled: !isAuthLoading && !!token && !!user && user.role === 'admin',
         retry: 1,
     });
 
-    // Show loading state while checking authentication
-    if (!user) {
+    // Show loading state while checking authentication and fetching data
+    if (isAuthLoading || isUsersLoading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Loader2 className="h-8 w-8 animate-spin" />
@@ -88,6 +93,16 @@ const ManageUsers: React.FC = () => {
         );
     }
 
+    if (isError) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-screen text-red-500">
+                <AlertTriangle className="h-12 w-12 mb-4" />
+                <h2 className="text-xl font-semibold">{error?.message || 'Failed to load users.'}</h2>
+                <p className="text-sm mt-2 text-muted-foreground">Please try again later or check your network connection.</p>
+            </div>
+        );
+    }
+    
     return (
         <div>
             <h1 className="text-3xl font-bold mb-6 text-gray-800">User Management</h1>
@@ -103,45 +118,26 @@ const ManageUsers: React.FC = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center p-8">
-                                        <Loader2 className="h-8 w-8 animate-spin mx-auto" />
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            {isError && (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-red-500 p-8">
-                                        <div className="flex items-center justify-center gap-2">
-                                            <AlertTriangle className="h-5 w-5" /> 
-                                            {error?.message || 'Failed to load users.'}
-                                        </div>
-                                        <div className="text-sm mt-2 text-muted-foreground">
-                                            Check the browser console for more details
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                            {!isLoading && !isError && users.length === 0 && (
+                            {users.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={4} className="text-center p-8 text-muted-foreground">
                                         No users found.
                                     </TableCell>
                                 </TableRow>
+                            ) : (
+                                users.map((user) => (
+                                    <TableRow key={user._id} className="hover:bg-muted/50 transition-colors">
+                                        <TableCell className="font-medium">{user.name}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                                {user.role}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>{new Date(user.date).toLocaleDateString()}</TableCell>
+                                    </TableRow>
+                                ))
                             )}
-                            {!isLoading && !isError && users.map((user) => (
-                                <TableRow key={user._id} className="hover:bg-muted/50 transition-colors">
-                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                                            {user.role}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>{new Date(user.date).toLocaleDateString()}</TableCell>
-                                </TableRow>
-                            ))}
                         </TableBody>
                     </Table>
                 </CardContent>

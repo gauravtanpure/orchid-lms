@@ -1,5 +1,6 @@
+// AdminLayout.tsx
 import React, { useState } from 'react';
-import { NavLink, Outlet, Navigate } from 'react-router-dom';
+import { NavLink, Outlet, Navigate, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   BookMarked,
@@ -19,16 +20,33 @@ import {
 const useAuth = () => ({
   user: { name: 'Admin User', email: 'admin@orchid.com', role: 'admin' },
   isLoggedIn: true,
-  logout: () => console.log('Logging out...'),
+  logout: () => {
+    // Implement your actual logout logic here
+    console.log('Logging out...');
+  },
 });
 
 const AdminLayout = () => {
   const { user, isLoggedIn, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
 
   if (!isLoggedIn || user?.role !== 'admin') {
     return <Navigate to="/login" replace />;
   }
+
+  // Handle logout logic with local storage clearance
+  const handleLogout = () => {
+    // Clear specific items from localStorage
+    localStorage.removeItem('token');
+    localStorage.removeItem('orchid_auth_user');
+
+    // Call the original logout function from the auth context
+    logout();
+
+    // Redirect to the landing page after logout
+    navigate('/');
+  };
 
   const linkClass = ({ isActive }: { isActive: boolean }) =>
     `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
@@ -164,13 +182,6 @@ const AdminLayout = () => {
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-            Logout
-          </button>
         </div>
       </aside>
 
@@ -198,6 +209,14 @@ const AdminLayout = () => {
             <button className="relative p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
               <Bell className="h-5 w-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+            {/* Added Logout Button */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
             </button>
           </div>
         </header>
