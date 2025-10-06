@@ -30,7 +30,9 @@ import ManageFeedback from "./pages/admin/ManageFeedback";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminSettings from "./pages/admin/AdminSettings";
 
-// Correctly create the QueryClient instance
+// 🟢 IMPORT THE NEW PublicRoute COMPONENT
+import PublicRoute from "./components/PublicRoute";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -43,19 +45,21 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* --- User Routes --- */}
-                <Route path="/" element={<Index />} />
-                <Route path="/courses" element={<Index />} />
-                <Route path="/about" element={<Index />} />
-                <Route path="/blogs" element={<Index />} />
-                <Route path="/contact" element={<Index />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
+                {/* --- 🟢 WRAP PUBLIC ROUTES --- */}
+                <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/courses" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/about" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/blogs" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/contact" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+                
+                {/* --- Routes for logged-in regular users (not wrapped) --- */}
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/my-courses" element={<MyCourses />} />
                 <Route path="/learn/:courseId" element={<CoursePlayer />} />
 
-                {/* --- Admin Routes --- */}
+                {/* --- Admin Routes (not wrapped) --- */}
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="courses" element={<ManageCourses />} />
