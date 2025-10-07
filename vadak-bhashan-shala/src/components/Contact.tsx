@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Mail, Phone, MapPin } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext"; // ✅ 1. Import the language context
 
 const STRAPI_API_URL = import.meta.env.VITE_STRAPI_API_URL;
 
@@ -10,15 +11,22 @@ interface FormData {
   message: string;
 }
 
+// ✅ 2. Updated interface with all your new multilingual fields
 interface ContactContent {
-  title: string;
-  subtitle: string;
-  address: string;
-  phone: string;
-  email: string;
+  title_en: string;
+  title_mr: string;
+  subtitle_en: string;
+  subtitle_mr: string;
+  address_en: string;
+  address_mr: string;
+  phone_en: string;
+  phone_mr: string;
+  email_en: string;
+  email_mr: string;
 }
 
 const Contact: React.FC = () => {
+  const { language, t } = useLanguage(); // ✅ 3. Get language and translation function
   const [content, setContent] = useState<ContactContent | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -38,30 +46,27 @@ const Contact: React.FC = () => {
       }
 
       try {
-        // ✅ Correct endpoint for a collection type
         const res = await fetch(`${STRAPI_API_URL}/api/contacts`);
-
         if (!res.ok) {
-          throw new Error(
-            `Failed to fetch contact content: ${res.status} ${res.statusText}`
-          );
+          throw new Error(`Failed to fetch contact content: ${res.status}`);
         }
-
         const data = await res.json();
-        console.log("✅ Contact API data:", data);
 
-        // ✅ Handle both Strapi v4 (attributes) and v5 (flattened)
         if (data.data && data.data.length > 0) {
           const item = data.data[0];
-          const attributes = item.attributes || item;
 
+          // ✅ 4. Set state with all new multilingual fields from the API
           setContent({
-            title: attributes.title || "Contact Us",
-            subtitle:
-              attributes.subtitle || "We’d love to hear from you!",
-            address: attributes.address || "",
-            phone: attributes.phone || "",
-            email: attributes.email || "",
+            title_en: item.title_en || "",
+            title_mr: item.title_mr || "",
+            subtitle_en: item.subtitle_en || "",
+            subtitle_mr: item.subtitle_mr || "",
+            address_en: item.address_en || "",
+            address_mr: item.address_mr || "",
+            phone_en: item.phone_en || "",
+            phone_mr: item.phone_mr || "",
+            email_en: item.email_en || "",
+            email_mr: item.email_mr || "",
           });
         } else {
           console.warn("⚠️ No contact entries found in API response.");
@@ -83,50 +88,53 @@ const Contact: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus("loading");
-    console.log("📤 Form submitted:", formData);
-
-    // Simulated form submission
+    // This is a simulated submission. You would replace this with a real API call.
     setTimeout(() => {
       setStatus("success");
       setFormData({ name: "", email: "", subject: "", message: "" });
     }, 1500);
   };
 
-  if (!content)
+  if (!content) {
     return (
       <div className="py-20 bg-gray-50">
         <p className="text-center text-gray-700">Loading contact info...</p>
       </div>
     );
+  }
+
+  // ✅ 5. Dynamically create contact info based on the selected language
+  const address = language === 'mr' ? content.address_mr : content.address_en;
+  const phone = language === 'mr' ? content.phone_mr : content.phone_en;
+  const email = language === 'mr' ? content.email_mr : content.email_en;
 
   const contactInfo = [
     {
       icon: MapPin,
-      value: content.address,
-      link: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-        content.address
-      )}`,
+      value: address,
+      link: `https://maps.google.com/?q=${encodeURIComponent(address)}`,
     },
-    { icon: Phone, value: content.phone, link: `tel:${content.phone}` },
-    { icon: Mail, value: content.email, link: `mailto:${content.email}` },
+    { icon: Phone, value: phone, link: `tel:${phone}` },
+    { icon: Mail, value: email, link: `mailto:${email}` },
   ];
 
   return (
     <section id="contact" className="py-16 md:py-24 bg-gray-50">
       <div className="container mx-auto px-4 max-w-7xl">
+        {/* ✅ 6. Render all text dynamically based on language */}
         <div className="text-center mb-16">
           <h2 className="text-4xl font-extrabold text-gray-900 mb-4">
-            {content.title}
+            {language === 'mr' ? content.title_mr : content.title_en}
           </h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            {content.subtitle}
+            {language === 'mr' ? content.subtitle_mr : content.subtitle_en}
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Contact Info Panel */}
           <div className="lg:col-span-1 p-8 bg-white rounded-xl shadow-2xl h-full flex flex-col justify-center border border-gray-100">
-            <h3 className="text-2xl font-bold text-blue-600 mb-6">Reach Out</h3>
+            <h3 className="text-2xl font-bold text-blue-600 mb-6">{t('reachOut')}</h3>
             <div className="space-y-6">
               {contactInfo.map(
                 (item, index) =>
@@ -151,12 +159,13 @@ const Contact: React.FC = () => {
           {/* Contact Form Panel */}
           <div className="lg:col-span-2 p-10 bg-white rounded-xl shadow-2xl border border-gray-100">
             <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              Send us a Message
+              {t('sendMessageTitle')}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* NOTE: Make sure keys like 'yourName', 'yourEmail', etc., exist in your language files */}
               <input
                 name="name"
-                placeholder="Your Name"
+                placeholder={t('yourName')}
                 value={formData.name}
                 onChange={handleChange}
                 required
@@ -164,7 +173,7 @@ const Contact: React.FC = () => {
               />
               <input
                 name="email"
-                placeholder="Your Email"
+                placeholder={t('yourEmail')}
                 value={formData.email}
                 onChange={handleChange}
                 type="email"
@@ -173,37 +182,33 @@ const Contact: React.FC = () => {
               />
               <input
                 name="subject"
-                placeholder="Subject"
+                placeholder={t('subject')}
                 value={formData.subject}
                 onChange={handleChange}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
               />
               <textarea
                 name="message"
-                placeholder="Your Message"
+                placeholder={t('yourMessage')}
                 value={formData.message}
                 onChange={handleChange}
                 rows={5}
                 required
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition"
               />
-
               <button
                 type="submit"
                 className="w-full flex items-center justify-center bg-blue-600 text-white p-3 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 disabled:bg-blue-400"
                 disabled={status === "loading"}
               >
                 {status === "loading"
-                  ? "Sending..."
+                  ? t('sending')
                   : status === "success"
-                  ? "Sent! Thank You."
-                  : "Send Message"}
+                  ? t('sentThankYou')
+                  : t('sendMessage')}
               </button>
-
               {status === "error" && (
-                <p className="text-red-500 text-center">
-                  Failed to send message. Please try again.
-                </p>
+                <p className="text-red-500 text-center">{t('sendMessageError')}</p>
               )}
             </form>
           </div>
