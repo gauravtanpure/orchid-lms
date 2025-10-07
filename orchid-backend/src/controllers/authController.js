@@ -21,9 +21,14 @@ exports.registerUser = async (req, res) => {
     const payload = { user: { id: user.id, role: user.role } };
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
+
+      // ✅ FIX: Send the full user object but remove the password
+      const userToReturn = user.toObject();
+      delete userToReturn.password;
+
       res.status(201).json({ 
         token, 
-        user: { id: user.id, name: user.name, email: user.email, role: user.role } 
+        user: userToReturn 
       });
     });
 
@@ -50,9 +55,15 @@ exports.loginUser = async (req, res) => {
     const payload = { user: { id: user.id, role: user.role } };
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
       if (err) throw err;
+
+      // ✅ CRITICAL FIX: Send the full user object (including enrolledCourses) 
+      // but remove the password for security.
+      const userToReturn = user.toObject();
+      delete userToReturn.password;
+      
       res.json({ 
         token, 
-        user: { id: user.id, name: user.name, email: user.email, role: user.role } 
+        user: userToReturn
       });
     });
 

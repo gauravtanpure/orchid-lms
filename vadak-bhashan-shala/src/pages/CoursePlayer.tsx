@@ -7,6 +7,7 @@ import { Course } from '@/types';
 import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 

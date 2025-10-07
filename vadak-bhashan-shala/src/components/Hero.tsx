@@ -87,13 +87,7 @@ const Hero = () => {
       {/* Main content container */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 py-20">
         
-        {/* Badge/Label at top */}
-        <div className="mb-8 animate-fade-in-down">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 border border-blue-200 rounded-full shadow-sm">
-            <Sparkles className="w-4 h-4 text-blue-600 animate-pulse" />
-            <span className="text-sm font-semibold text-blue-700">Welcome to the Future</span>
-          </div>
-        </div>
+        
 
         {/* Main content card */}
         <div className="w-full max-w-5xl animate-scale-in">
