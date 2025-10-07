@@ -11,7 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
 const fetchCourseById = async (courseId: string): Promise<Course> => {
-  const { data } = await axios.get(`${API_URL}/api/courses/${courseId}`);
+  // 🟢 CORRECT: This is the request that receives the 404, now fixed in courseRoutes.js
+  const { data } = await axios.get(`${API_URL}/api/courses/${courseId}`); 
   return data;
 };
 
@@ -30,20 +31,31 @@ const CoursePlayer: React.FC = () => {
   }
 
   // Security check: Ensure the user is enrolled in this course
-  if (!isLoading && course && !isEnrolled(course._id)) {
-      return <Navigate to="/my-courses" replace />;
+  if (!isEnrolled(courseId!)) {
+    // Redirect if not enrolled. The enrollment check relies on AuthContext being up-to-date.
+    return <Navigate to="/" replace />;
   }
 
   if (isError || !course) {
-    return <div className="flex h-screen items-center justify-center text-red-500"><AlertTriangle className="mr-2"/> Course not found.</div>;
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-gray-50">
+        <AlertTriangle className="h-12 w-12 text-red-500 mb-4" />
+        <h1 className="text-xl font-semibold">Error Loading Course</h1>
+        <p className="text-muted-foreground">The course could not be found or loaded.</p>
+        <Link to="/my-courses" className="mt-4">
+            <Button>Go to My Courses</Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col h-screen">
       <Header />
       <div className="flex-grow grid lg:grid-cols-4">
         <main className="lg:col-span-3 bg-black flex flex-col">
           <div className="w-full aspect-video bg-black">
+            {/* 🟢 VIDEO PLAYER: This relies on course.videoUrl being fetched successfully */}
             <video key={course.videoUrl} className="w-full h-full" controls autoPlay>
               <source src={course.videoUrl} type="video/mp4" />
               Your browser does not support the video tag.
@@ -64,7 +76,7 @@ const CoursePlayer: React.FC = () => {
             {/* Future: Map over lessons here */}
             <div className="p-4 rounded-lg bg-primary/10 border border-primary">
               <p className="font-semibold">{course.title}</p>
-              <p className="text-sm text-muted-foreground">{course.duration} hours</p>
+              <p className="text-sm text-muted-foreground">Video 1: Introduction</p>
             </div>
           </div>
         </aside>

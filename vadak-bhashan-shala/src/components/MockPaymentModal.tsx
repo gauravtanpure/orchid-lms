@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { CreditCard, Loader2 } from 'lucide-react';
+import { useCart } from '@/contexts/CartContext'; // ADD: Import useCart
+// Assuming you have a useToast hook for feedback
+// import { useToast } from '@/hooks/use-toast'; 
 
 interface MockPaymentModalProps {
   isOpen: boolean;
@@ -15,14 +18,43 @@ interface MockPaymentModalProps {
 
 export const MockPaymentModal: React.FC<MockPaymentModalProps> = ({ isOpen, onClose, onConfirm, totalAmount }) => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { checkout } = useCart(); // FIX: Use checkout from cart
+  // const { toast } = useToast(); 
 
-  const handlePayment = () => {
+  const handlePayment = async () => { // FIX: Make function async
     setIsProcessing(true);
-    setTimeout(() => { // Simulate a 2-second payment processing delay
-      onConfirm();
-      setIsProcessing(false);
-      onClose();
-    }, 2000);
+    
+    try {
+        // Simulate a 1-second payment processing delay
+        await new Promise(resolve => setTimeout(resolve, 1000)); 
+        
+        // CRITICAL FIX: Perform enrollment and state update via checkout()
+        await checkout(); 
+        
+        // onConfirm is called only if checkout is successful
+        onConfirm(); 
+        
+        // Use toast for user feedback if available
+        /* toast({
+            title: "Payment Successful",
+            description: "You have been enrolled in the courses!",
+            variant: "success",
+        }); */
+        alert("Payment Successful! You are now enrolled.");
+
+    } catch (error) {
+        console.error('Payment/Enrollment failed:', error);
+        // Use toast for user feedback if available
+        /* toast({
+            title: "Payment Failed",
+            description: error.message || "An unexpected error occurred during enrollment.",
+            variant: "destructive",
+        }); */
+        alert(`Enrollment failed: ${error.message}`);
+    } finally {
+        setIsProcessing(false);
+        onClose();
+    }
   };
 
   return (

@@ -1,4 +1,5 @@
 // /frontend/src/components/CourseCard.tsx
+
 import React from 'react';
 import { Star, Clock, Users, ShoppingCart, Eye, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -7,12 +8,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Course } from '@/types'; // Assuming you have a Course type definition
+import { Course } from '@/types'; 
 
-// Extend the Course type to include optional originalPrice for display
 interface CourseCardProps extends Course {
   originalPrice?: number;
-  level?: 'beginner' | 'intermediate' | 'advanced'; // Make level optional if not in DB
+  level?: 'beginner' | 'intermediate' | 'advanced';
 }
 
 const CourseCard: React.FC<CourseCardProps> = ({
@@ -23,7 +23,6 @@ const CourseCard: React.FC<CourseCardProps> = ({
   originalPrice,
   thumbnailUrl,
   category,
-  // Dummy data for now, as they are not in your backend model yet
   rating = 4.8, 
   reviewCount = 150,
   studentCount = 1200,
@@ -34,7 +33,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
   const { toast } = useToast();
   const { isLoggedIn, user } = useAuth();
   
-  const isEnrolled = isLoggedIn && user?.enrolledCourses?.includes(_id);
+  // 🟢 CRITICAL FIX: Correctly check enrollment by checking the 'courseId' field in the enrolledCourses objects
+  const isEnrolled = 
+    isLoggedIn && 
+    user?.enrolledCourses?.some(enrollment => enrollment.courseId === _id);
+
   const isInCart = items.some(item => item.id === _id);
 
   const handleAddToCart = () => {
@@ -110,7 +113,7 @@ const CourseCard: React.FC<CourseCardProps> = ({
           </div>
           <div className="flex gap-2 mt-4">
             {isEnrolled ? (
-              <Link to="/my-courses" className="w-full"> 
+              <Link to={`/learn/${_id}`} className="w-full"> 
                 <Button size="sm" className="w-full btn-success">
                   <CheckCircle className="w-4 h-4 mr-2" />{t('goToCourse')}
                 </Button>

@@ -73,7 +73,28 @@ router.get('/', async (req, res) => {
     }
 });
 
-// NOTE: You would add a GET route for `my-courses` that uses authentication
-// to find courses based on the user's enrolledCourses array.
+// 🟢 CRITICAL FIX: GET a single course by ID
+// @desc    Fetch a single course by ID
+// @route   GET /api/courses/:id
+// @access  Public
+router.get('/:id', async (req, res) => {
+    try {
+        const course = await Course.findById(req.params.id);
+
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        res.status(200).json(course);
+    } catch (error) {
+        // Handle invalid MongoDB ID format, which also results in a 404 for the user
+        if (error.kind === 'ObjectId') {
+             return res.status(404).json({ message: 'Course not found' });
+        }
+        console.error('Error fetching single course:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
 
 module.exports = router;
