@@ -13,6 +13,14 @@ const courseSchema = new mongoose.Schema({
   thumbnail_cloudinary_id: { type: String, required: true },
   videoUrl: { type: String, required: true },
   video_cloudinary_id: { type: String, required: true },
+
+  // --- 👇 NEW: Add this special offer object ---
+  specialOffer: {
+    isActive: { type: Boolean, default: false },
+    discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
+    discountValue: { type: Number, default: 0 },
+    description: { type: String, trim: true }
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Course', courseSchema);

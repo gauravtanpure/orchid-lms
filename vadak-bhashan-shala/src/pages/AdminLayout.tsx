@@ -12,8 +12,8 @@ import {
   Bell,
   Menu,
   X,
-  ChevronRight,
   Settings,
+  Tag, // 1. IMPORT THE TAG ICON
 } from 'lucide-react';
 
 // Mock auth context
@@ -124,6 +124,15 @@ const AdminLayout = () => {
                 <BookMarked className="h-5 w-5" />
                 <span className="text-sm">Courses</span>
               </NavLink>
+              {/* --- 2. ADD THE NEW LINK HERE --- */}
+              <NavLink
+                to="/admin/coupons"
+                className={linkClass}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Tag className="h-5 w-5" />
+                <span className="text-sm">Coupons</span>
+              </NavLink>
               <NavLink
                 to="/admin/users"
                 className={linkClass}
@@ -195,7 +204,6 @@ const AdminLayout = () => {
           >
             <Menu className="h-6 w-6" />
           </button>
-
           <div className="flex-1 lg:flex-initial">
             <h2 className="text-lg lg:text-xl font-semibold text-gray-900">
               Admin Dashboard
@@ -204,13 +212,11 @@ const AdminLayout = () => {
               Manage your educational platform
             </p>
           </div>
-
           <div className="flex items-center gap-4">
             <button className="relative p-2.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
               <Bell className="h-5 w-5" />
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full"></span>
             </button>
-            {/* Added Logout Button */}
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"

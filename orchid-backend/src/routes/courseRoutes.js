@@ -26,15 +26,29 @@ router.post(
   upload.fields([{ name: 'thumbnail', maxCount: 1 }, { name: 'video', maxCount: 1 }]),
   async (req, res) => {
     try {
-      const { title, instructor, price, duration, category } = req.body;
+      const { title, instructor, price, duration, category, specialOfferString } = req.body;
       const thumbnailFile = req.files.thumbnail[0];
       const videoFile = req.files.video[0];
+
+      // --- 1. Log the received string ---
+      console.log("Backend received specialOfferString:", specialOfferString);
 
       if (!thumbnailFile || !videoFile) {
         return res.status(400).json({ message: 'Thumbnail and video files are required.' });
       }
 
-      // Upload files to Cloudinary
+      let specialOffer = { isActive: false };
+      if (specialOfferString) {
+        try {
+          specialOffer = JSON.parse(specialOfferString);
+        } catch (e) {
+          return res.status(400).json({ message: 'Invalid special offer format.' });
+        }
+      }
+
+      // --- 2. Log the parsed object ---
+      console.log("Parsed specialOffer object:", specialOffer);
+
       const [thumbnailResult, videoResult] = await Promise.all([
         uploadToCloudinary(thumbnailFile.buffer, { folder: 'course_thumbnails' }),
         uploadToCloudinary(videoFile.buffer, { resource_type: 'video', folder: 'course_videos' })
@@ -50,7 +64,11 @@ router.post(
         thumbnail_cloudinary_id: thumbnailResult.public_id,
         videoUrl: videoResult.secure_url,
         video_cloudinary_id: videoResult.public_id,
+        specialOffer,
       });
+
+      // --- 3. Log the object before it's saved ---
+      console.log("Mongoose document before saving:", newCourse);
 
       await newCourse.save();
       res.status(201).json({ message: 'Course created successfully', course: newCourse });
@@ -73,10 +91,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-// 🟢 CRITICAL FIX: GET a single course by ID
-// @desc    Fetch a single course by ID
-// @route   GET /api/courses/:id
-// @access  Public
+// GET a single course by ID
 router.get('/:id', async (req, res) => {
     try {
         const course = await Course.findById(req.params.id);
@@ -87,7 +102,6 @@ router.get('/:id', async (req, res) => {
 
         res.status(200).json(course);
     } catch (error) {
-        // Handle invalid MongoDB ID format, which also results in a 404 for the user
         if (error.kind === 'ObjectId') {
              return res.status(404).json({ message: 'Course not found' });
         }
@@ -95,6 +109,5 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error' });
     }
 });
-
 
 module.exports = router;

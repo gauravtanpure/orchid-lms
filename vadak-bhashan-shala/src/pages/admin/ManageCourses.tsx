@@ -10,8 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, UploadCloud, Eye, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { useToast } from "@/components/ui/use-toast"
-import { Course } from '@/types'; // <-- IMPORT TYPE
+import { useToast } from "@/components/ui/use-toast";
+import { Course } from '@/types';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // API functions
 const fetchCourses = async (): Promise<Course[]> => {
@@ -26,36 +28,40 @@ const addCourse = async (formData: FormData) => {
   return data;
 };
 
+// Initial state for the form
+const initialCourseState = {
+    title: '', instructor: '', price: '', duration: '', category: 'english',
+    thumbnail: null as File | null,
+    video: null as File | null,
+    specialOffer: {
+        isActive: false,
+        discountType: 'percentage' as 'percentage' | 'fixed',
+        discountValue: '',
+        description: ''
+    }
+};
+
 const ManageCourses: React.FC = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newCourseData, setNewCourseData] = useState(initialCourseState);
 
-  // State for the new course form fields
-  const [newCourseData, setNewCourseData] = useState({
-    title: '', instructor: '', price: '', duration: '', category: 'english',
-    thumbnail: null as File | null,
-    video: null as File | null,
-  });
-
-  // --- React Query for Data Fetching ---
   const { data: courses = [], isLoading, isError } = useQuery<Course[]>({
     queryKey: ['courses'],
     queryFn: fetchCourses,
   });
 
-  // --- React Query for Data Mutation (Adding a Course) ---
   const mutation = useMutation({
     mutationFn: addCourse,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['courses'] }); // Refetch courses after success
+      queryClient.invalidateQueries({ queryKey: ['courses'] });
       toast({ title: "Success", description: "Course added successfully!" });
-      setIsDialogOpen(false); // Close dialog
-      // Reset form
-      setNewCourseData({ title: '', instructor: '', price: '', duration: '', category: 'english', thumbnail: null, video: null });
+      setIsDialogOpen(false);
+      setNewCourseData(initialCourseState); // Reset form to initial state
     },
-    onError: (error) => {
-      toast({ variant: "destructive", title: "Error", description: `Failed to add course: ${error.message}` });
+    onError: (error: any) => {
+      toast({ variant: "destructive", title: "Error", description: error.response?.data?.message || `Failed to add course: ${error.message}` });
     },
   });
 
@@ -66,6 +72,28 @@ const ManageCourses: React.FC = () => {
     } else {
       setNewCourseData({ ...newCourseData, [name]: value });
     }
+  };
+  
+  const handleOfferChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setNewCourseData(prev => ({
+        ...prev,
+        specialOffer: { ...prev.specialOffer, [name]: value }
+    }));
+  };
+  
+  const handleOfferSwitchChange = (checked: boolean) => {
+     setNewCourseData(prev => ({
+        ...prev,
+        specialOffer: { ...prev.specialOffer, isActive: checked }
+    }));
+  };
+
+  const handleOfferTypeChange = (value: 'percentage' | 'fixed') => {
+      setNewCourseData(prev => ({
+        ...prev,
+        specialOffer: { ...prev.specialOffer, discountType: value }
+    }));
   };
 
   const handleAddCourse = (e: React.FormEvent) => {
@@ -79,6 +107,12 @@ const ManageCourses: React.FC = () => {
     if (newCourseData.thumbnail) formData.append('thumbnail', newCourseData.thumbnail);
     if (newCourseData.video) formData.append('video', newCourseData.video);
     
+    const offerPayload = {
+        ...newCourseData.specialOffer,
+        discountValue: Number(newCourseData.specialOffer.discountValue) || 0
+    };
+    formData.append('specialOfferString', JSON.stringify(offerPayload));
+    
     mutation.mutate(formData);
   };
 
@@ -91,7 +125,6 @@ const ManageCourses: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold text-gray-800">Manage Courses & Tracking</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          {/* ... DialogTrigger and DialogContent with the form ... */}
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90">
               <PlusCircle className="mr-2 h-4 w-4" /> Add New Course
@@ -105,40 +138,76 @@ const ManageCourses: React.FC = () => {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleAddCourse}>
-              {/* --- Form fields are the same as your original file --- */}
               <div className="grid gap-4 py-4">
-                  {/* Title */}
+                  {/* Title, Instructor, Price, etc. fields remain the same */}
                   <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="title" className="text-right">Title</Label>
                       <Input id="title" name="title" value={newCourseData.title} onChange={handleInputChange} className="col-span-3" required />
                   </div>
-                  {/* Instructor */}
                   <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="instructor" className="text-right">Instructor</Label>
                       <Input id="instructor" name="instructor" value={newCourseData.instructor} onChange={handleInputChange} className="col-span-3" required />
                   </div>
-                  {/* Price */}
                   <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="price" className="text-right">Price (₹)</Label>
                       <Input id="price" name="price" type="number" value={newCourseData.price} onChange={handleInputChange} className="col-span-3" required />
                   </div>
-                  {/* Duration */}
                   <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="duration" className="text-right">Duration (hrs)</Label>
                       <Input id="duration" name="duration" type="number" value={newCourseData.duration} onChange={handleInputChange} className="col-span-3" required />
                   </div>
-                  {/* Thumbnail */}
                   <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="thumbnail" className="text-right">Thumbnail</Label>
                       <Input id="thumbnail" name="thumbnail" type="file" accept="image/*" onChange={handleInputChange} className="col-span-3" required />
                   </div>
-                  {/* Video */}
                   <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="video" className="text-right">Course Video</Label>
                       <Input id="video" name="video" type="file" accept="video/*" onChange={handleInputChange} className="col-span-3" required />
                   </div>
               </div>
-              <DialogFooter>
+              
+              {/* Special Offer Section */}
+              <div className="space-y-4 rounded-md border p-4">
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="isActive" className="font-semibold">Activate Special Offer</Label>
+                    <Switch 
+                        id="isActive"
+                        checked={newCourseData.specialOffer.isActive} 
+                        onCheckedChange={handleOfferSwitchChange} 
+                    />
+                </div>
+                {newCourseData.specialOffer.isActive && (
+                    <div className="space-y-4 pt-2">
+                        <Input 
+                            name="description" 
+                            placeholder="Offer Description (e.g., 25% Off)" 
+                            value={newCourseData.specialOffer.description} 
+                            onChange={handleOfferChange}
+                        />
+                        <div className="flex items-center gap-2">
+                           <Input 
+                                name="discountValue" 
+                                type="number"
+                                placeholder="Value" 
+                                value={newCourseData.specialOffer.discountValue} 
+                                onChange={handleOfferChange}
+                                className="w-1/2"
+                            />
+                            <Select onValueChange={handleOfferTypeChange} defaultValue={newCourseData.specialOffer.discountType}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="percentage">% Percentage</SelectItem>
+                                    <SelectItem value="fixed">₹ Fixed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                )}
+              </div>
+
+              <DialogFooter className="mt-4">
                 <Button type="submit" disabled={mutation.isPending}>
                   {mutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -153,10 +222,10 @@ const ManageCourses: React.FC = () => {
         </Dialog>
       </div>
       <Card className="shadow-lg">
+        {/* The Table display remains unchanged for now */}
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              {/* ... TableHeader is the same ... */}
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Instructor</TableHead>

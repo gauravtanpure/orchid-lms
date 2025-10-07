@@ -24,13 +24,12 @@ import NotFound from "./pages/NotFound";
 import AdminLayout from "./pages/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageCourses from "./pages/admin/ManageCourses";
+import ManageCoupons from "./pages/admin/ManageCoupons"; // 1. IMPORT THE NEW PAGE
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import ManageFeedback from "./pages/admin/ManageFeedback";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminSettings from "./pages/admin/AdminSettings";
-
-// 🟢 IMPORT THE NEW PublicRoute COMPONENT
 import PublicRoute from "./components/PublicRoute";
 
 const queryClient = new QueryClient();
@@ -45,7 +44,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                {/* --- 🟢 WRAP PUBLIC ROUTES --- */}
+                {/* --- Public Routes --- */}
                 <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
                 <Route path="/courses" element={<PublicRoute><Index /></PublicRoute>} />
                 <Route path="/about" element={<PublicRoute><Index /></PublicRoute>} />
@@ -54,15 +53,16 @@ const App = () => (
                 <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
                 
-                {/* --- Routes for logged-in regular users (not wrapped) --- */}
+                {/* --- Routes for logged-in regular users --- */}
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/my-courses" element={<MyCourses />} />
                 <Route path="/learn/:courseId" element={<CoursePlayer />} />
 
-                {/* --- Admin Routes (not wrapped) --- */}
+                {/* --- Admin Routes --- */}
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="courses" element={<ManageCourses />} />
+                  <Route path="coupons" element={<ManageCoupons />} /> {/* 2. ADD THE NEW ROUTE */}
                   <Route path="users" element={<ManageUsers />} />
                   <Route path="analytics" element={<AdminAnalytics />} />
                   <Route path="feedback" element={<ManageFeedback />} />
@@ -82,3 +82,4 @@ const App = () => (
 );
 
 export default App;
+
