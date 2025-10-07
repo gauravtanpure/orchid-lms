@@ -14,27 +14,14 @@
     "title_en": {
       "type": "string"
     },
-<<<<<<< HEAD
-    "subtitle": {
-      "type": "string"
-    },
-    "main_image": {
-      "type": "media",
-      "multiple": false,
-      "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
-      ]
-    },
-    "mission_title": {
-      "type": "string"
-    },
-    "mission_description": {
-=======
     "title_mr": {
       "type": "string"
+    },
+    "subtitle_en": {
+      "type": "string"
+    },
+    "subtitle_mr": {
+      "type": "text"
     },
     "Mission_en": {
       "type": "string"
@@ -43,7 +30,7 @@
       "type": "string"
     },
     "our_team_en": {
-      "type": "string"
+      "type": "text"
     },
     "our_team_mr": {
       "type": "string"
@@ -53,13 +40,6 @@
     },
     "Why_ChooseUs_mr": {
       "type": "text"
-    },
-    "subtitle_en": {
-      "type": "string"
-    },
-    "subtitle_mr": {
->>>>>>> 392f59b (cms adding heros and abouts)
-      "type": "string"
     }
   }
 }
