@@ -11,21 +11,17 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "title": {
+    "title_en": {
       "type": "string"
     },
-    "subtitle": {
+    "subtitle_mr": {
       "type": "string"
     },
-    "background_image": {
-      "type": "media",
-      "multiple": true,
-      "allowedTypes": [
-        "images",
-        "files",
-        "videos",
-        "audios"
-      ]
+    "title_mr": {
+      "type": "string"
+    },
+    "subtitle_en": {
+      "type": "string"
     }
   }
 }

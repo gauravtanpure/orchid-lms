@@ -11,9 +11,10 @@
   },
   "pluginOptions": {},
   "attributes": {
-    "title": {
+    "title_en": {
       "type": "string"
     },
+<<<<<<< HEAD
     "subtitle": {
       "type": "string"
     },
@@ -31,6 +32,33 @@
       "type": "string"
     },
     "mission_description": {
+=======
+    "title_mr": {
+      "type": "string"
+    },
+    "Mission_en": {
+      "type": "string"
+    },
+    "Mission_mr": {
+      "type": "string"
+    },
+    "our_team_en": {
+      "type": "string"
+    },
+    "our_team_mr": {
+      "type": "string"
+    },
+    "Why_ChooseUs_en": {
+      "type": "text"
+    },
+    "Why_ChooseUs_mr": {
+      "type": "text"
+    },
+    "subtitle_en": {
+      "type": "string"
+    },
+    "subtitle_mr": {
+>>>>>>> 392f59b (cms adding heros and abouts)
       "type": "string"
     }
   }

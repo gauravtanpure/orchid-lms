@@ -9,13 +9,13 @@
     "deploy": "strapi deploy",
     "dev": "strapi develop",
     "develop": "strapi develop",
-    "seed:example": "node ./scripts/seed.js",
     "start": "strapi start",
     "strapi": "strapi",
     "upgrade": "npx @strapi/upgrade latest",
     "upgrade:dry": "npx @strapi/upgrade latest --dry"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@strapi/plugin-cloud": "5.25.0",
     "@strapi/plugin-users-permissions": "5.25.0",
     "@strapi/strapi": "5.25.0",
@@ -23,6 +23,12 @@
     "fs-extra": "^10.0.0",
     "mime-types": "^2.1.27",
     "pg": "^8.16.3",
+=======
+    "@strapi/plugin-cloud": "5.26.0",
+    "@strapi/plugin-users-permissions": "5.26.0",
+    "@strapi/strapi": "5.26.0",
+    "pg": "8.8.0",
+>>>>>>> 392f59b (cms adding heros and abouts)
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-router-dom": "^6.0.0",
@@ -39,7 +45,7 @@
     "npm": ">=6.0.0"
   },
   "strapi": {
-    "uuid": "5856c57c-5908-4c57-8000-37a47621ad6b",
-    "installId": "908883f54a8f22acff3435ca747f742c27ff5b3cd76b7bd9ca2e6e599d04ebda"
+    "uuid": "e5795fb4-edb0-4a42-b82e-349a00caa73c",
+    "installId": "3024edd71782830dbe2b982b30d42c7a4026517f2f204e78fa79ad1105f2b8c7"
   }
 }

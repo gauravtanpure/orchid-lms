@@ -447,6 +447,7 @@ export interface ApiAboutAbout extends Struct.CollectionTypeSchema {
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::about.about'> &
       Schema.Attribute.Private;
+<<<<<<< HEAD
     main_image: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios'
     >;
@@ -591,9 +592,22 @@ export interface ApiGlobalGlobal extends Struct.SingleTypeSchema {
     publishedAt: Schema.Attribute.DateTime;
     siteDescription: Schema.Attribute.Text & Schema.Attribute.Required;
     siteName: Schema.Attribute.String & Schema.Attribute.Required;
+=======
+    Mission_en: Schema.Attribute.String;
+    Mission_mr: Schema.Attribute.String;
+    our_team_en: Schema.Attribute.String;
+    our_team_mr: Schema.Attribute.String;
+    publishedAt: Schema.Attribute.DateTime;
+    subtitle_en: Schema.Attribute.String;
+    subtitle_mr: Schema.Attribute.String;
+    title_en: Schema.Attribute.String;
+    title_mr: Schema.Attribute.String;
+>>>>>>> 392f59b (cms adding heros and abouts)
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
+    Why_ChooseUs_en: Schema.Attribute.Text;
+    Why_ChooseUs_mr: Schema.Attribute.Text;
   };
 }
 
@@ -608,10 +622,6 @@ export interface ApiHeroHero extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
-    background_image: Schema.Attribute.Media<
-      'images' | 'files' | 'videos' | 'audios',
-      true
-    >;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -619,8 +629,10 @@ export interface ApiHeroHero extends Struct.CollectionTypeSchema {
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::hero.hero'> &
       Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
-    subtitle: Schema.Attribute.String;
-    title: Schema.Attribute.String;
+    subtitle_en: Schema.Attribute.String;
+    subtitle_mr: Schema.Attribute.String;
+    title_en: Schema.Attribute.String;
+    title_mr: Schema.Attribute.String;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1138,10 +1150,6 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::about.about': ApiAboutAbout;
-      'api::article.article': ApiArticleArticle;
-      'api::author.author': ApiAuthorAuthor;
-      'api::category.category': ApiCategoryCategory;
-      'api::global.global': ApiGlobalGlobal;
       'api::hero.hero': ApiHeroHero;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
