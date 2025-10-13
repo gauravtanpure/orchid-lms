@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // Import useNavigate
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Sparkles, ArrowRight, CheckCircle, Zap, Star } from "lucide-react";
+import { ArrowRight, Phone, CheckCircle, Users, Award, PlayCircle } from "lucide-react";
 
 const STRAPI_API_URL = import.meta.env.VITE_STRAPI_API_URL;
 
@@ -11,9 +12,51 @@ interface HeroContent {
   subtitle_mr: string;
 }
 
+// Counter animation hook
+const useCountUp = (end: number, duration: number = 2000) => {
+  const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+
+  useEffect(() => {
+    if (hasAnimated) return;
+    
+    setHasAnimated(true);
+    let startTime: number | null = null;
+    const animate = (currentTime: number) => {
+      if (!startTime) startTime = currentTime;
+      const progress = Math.min((currentTime - startTime) / duration, 1);
+      
+      setCount(Math.floor(progress * end));
+      
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+    
+    requestAnimationFrame(animate);
+  }, [end, duration, hasAnimated]);
+
+  return count;
+};
+
 const Hero = () => {
   const [content, setContent] = useState<HeroContent | null>(null);
   const { language } = useLanguage();
+  const navigate = useNavigate(); // Initialize useNavigate hook
+
+  const studentsCount = useCountUp(50000);
+  const coursesCount = useCountUp(500);
+  const successRate = useCountUp(98);
+
+  // Handlers for CTA buttons
+  const handleGetStarted = () => {
+    navigate('/courses'); // Navigate to the courses page
+  };
+
+  const handleCallUs = () => {
+    navigate('/contact'); // Navigate to the contact page
+  };
+
 
   useEffect(() => {
     const fetchHero = async () => {
@@ -57,208 +100,134 @@ const Hero = () => {
 
   if (!content) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-        <div className="relative mb-4">
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <div className="absolute inset-0 w-16 h-16 border-4 border-indigo-300 border-t-transparent rounded-full animate-spin-slow"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white">
+        <div className="relative mb-6">
+          <div className="w-24 h-24 border-6 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         </div>
-        <p className="text-slate-600 font-medium animate-pulse">Loading amazing content...</p>
+        <p className="text-slate-700 text-2xl font-semibold">Loading...</p>
       </div>
     );
   }
 
   return (
-    <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      {/* Animated background elements */}
+    <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-blue-50 via-white to-slate-50">
+      {/* Simple, calm background */}
       <div className="absolute inset-0">
-        <div className="absolute top-20 right-10 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-float"></div>
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-float-delayed"></div>
-        <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-15 animate-float-slow"></div>
+        <div className="absolute top-20 right-10 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-40"></div>
+        <div className="absolute bottom-20 left-10 w-80 h-80 bg-indigo-100 rounded-full blur-3xl opacity-40"></div>
       </div>
 
-      {/* Animated grid pattern */}
-      <div className="absolute inset-0 opacity-[0.02] animate-slide-pattern" 
-           style={{
-             backgroundImage: `radial-gradient(circle at 1px 1px, rgb(59 130 246) 1px, transparent 0)`,
-             backgroundSize: '50px 50px'
-           }}>
-      </div>
-
-      {/* Main content container */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 py-20">
-        
+      {/* Main content */}
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 sm:px-8 lg:px-12 py-20">
         
 
-        {/* Main content card */}
-        <div className="w-full max-w-5xl animate-scale-in">
-          <div className="relative bg-white/90 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl shadow-2xl overflow-hidden">
+
+        {/* Main content card - larger spacing */}
+        <div className="w-full max-w-6xl">
+          <div className="text-center space-y-12">
             
-            {/* Decorative top border animation */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 animate-gradient-x"></div>
-            
-            {/* Inner content */}
-            <div className="relative p-8 sm:p-12 lg:p-16">
+            {/* Title - Clear and readable */}
+            <div className="space-y-8">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-slate-900">
+                {language === 'mr' ? content.title_mr : content.title_en}
+              </h1>
               
-              {/* Title section */}
-              <div className="text-center mb-8">
-                <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black text-slate-900 leading-tight mb-6 animate-fade-in-down">
-                  <span className="inline-block hover:scale-105 transition-transform duration-300">
-                    {language === 'mr' ? content.title_mr : content.title_en}
-                  </span>
-                </h1>
-                
-                <div className="flex items-center justify-center gap-2 mb-8">
-                  <div className="h-1 w-12 bg-gradient-to-r from-transparent to-blue-600 rounded-full"></div>
-                  <Star className="w-5 h-5 text-blue-600 fill-blue-600 animate-spin-slow" />
-                  <div className="h-1 w-12 bg-gradient-to-l from-transparent to-blue-600 rounded-full"></div>
-                </div>
-                
-                <p className="text-lg sm:text-xl lg:text-2xl text-slate-600 leading-relaxed max-w-3xl mx-auto animate-fade-in-up">
-                  {language === 'mr' ? content.subtitle_mr : content.subtitle_en}
-                </p>
+              {/* Simple divider */}
+              <div className="flex items-center justify-center">
+                <div className="h-1 w-24 bg-blue-600 rounded-full"></div>
               </div>
-
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-bounce-in">
-                <button className="group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-lg font-bold rounded-xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 overflow-hidden">
-                  <span className="relative z-10 flex items-center gap-2">
-                    Get Started
-                    <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-                  </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-                </button>
-                
-                <button className="group px-8 py-4 bg-white border-2 border-slate-300 text-slate-700 text-lg font-bold rounded-xl shadow-md transition-all duration-300 hover:bg-slate-50 hover:shadow-lg hover:border-slate-400 hover:scale-105">
-                  <span className="flex items-center gap-2">
-                    Learn More
-                    <Zap className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" />
-                  </span>
-                </button>
-              </div>
-
-              {/* Feature highlights */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto animate-fade-in-up-delay">
-                {[
-                  { icon: CheckCircle, text: "Fast & Reliable" },
-                  { icon: Zap, text: "Easy to Use" },
-                  { icon: Star, text: "Best Quality" }
-                ].map((feature, index) => (
-                  <div 
-                    key={index}
-                    className="group flex items-center justify-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-blue-50 border border-slate-200 rounded-xl transition-all duration-300 hover:shadow-lg hover:scale-105 hover:border-blue-300"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <feature.icon className="w-5 h-5 text-blue-600 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
-                    <span className="text-sm font-semibold text-slate-700">{feature.text}</span>
-                  </div>
-                ))}
-              </div>
+              
+              {/* Subtitle - Readable */}
+              <p className="text-xl sm:text-2xl lg:text-3xl text-slate-700 leading-relaxed max-w-4xl mx-auto font-normal">
+                {language === 'mr' ? content.subtitle_mr : content.subtitle_en}
+              </p>
             </div>
 
-            {/* Decorative corner elements */}
-            <div className="absolute -top-8 -right-8 w-32 h-32 bg-gradient-to-br from-blue-400 to-indigo-400 rounded-full blur-2xl opacity-20 animate-pulse-slow"></div>
-            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full blur-2xl opacity-20 animate-pulse-slow animation-delay-1000"></div>
-          </div>
-        </div>
+            {/* Reduced size CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              {/* Reduced padding (py-7 -> py-4, px-12 -> px-8) and font size (text-2xl -> text-xl) */}
+              <button 
+                onClick={handleGetStarted} // Added click handler
+                className="group px-8 py-4 bg-blue-600 text-white text-xl font-bold rounded-xl shadow-xl transition-all duration-300 hover:bg-blue-700 hover:shadow-2xl hover:scale-105"
+              >
+                <span className="flex items-center gap-2">
+                  Get Started
+                  <ArrowRight className="w-6 h-6" /> {/* Reduced icon size */}
+                </span>
+              </button>
+              
+              {/* Reduced padding (py-7 -> py-4, px-12 -> px-8) and font size (text-2xl -> text-xl) */}
+              <button 
+                onClick={handleCallUs} // Added click handler
+                className="group px-8 py-4 bg-white border-2 border-blue-600 text-blue-600 text-xl font-bold rounded-xl shadow-xl transition-all duration-300 hover:bg-blue-50 hover:shadow-2xl hover:scale-105"
+              >
+                <span className="flex items-center gap-2">
+                  <Phone className="w-6 h-6" /> {/* Reduced icon size */}
+                  Call Us
+                </span>
+              </button>
+            </div>
 
-        {/* Bottom decorative elements */}
-        <div className="mt-12 flex items-center gap-8 animate-fade-in-up-late">
-          <div className="flex -space-x-2">
-            {[1, 2, 3, 4].map((i) => (
-              <div 
-                key={i}
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 border-2 border-white shadow-md animate-bounce-subtle"
-                style={{ animationDelay: `${i * 0.1}s` }}
-              ></div>
-            ))}
+            {/* Simple, clear stats with counter animation - Reduced size */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8"> {/* Reduced gap and pt */}
+              {[
+                { icon: Users, value: studentsCount, suffix: "+", label: "Happy Students", color: "bg-blue-600" },
+                { icon: Award, value: coursesCount, suffix: "+", label: "Expert Teachers", color: "bg-green-600" },
+                { icon: CheckCircle, value: successRate, suffix: "%", label: "Success Rate", color: "bg-purple-600" }
+              ].map((stat, index) => (
+                <div 
+                  key={index}
+                  // Reduced padding (p-10 -> p-6) and increased border-radius (rounded-3xl -> rounded-2xl)
+                  className="p-6 bg-white border-2 border-slate-200 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105"
+                >
+                  <div className="space-y-3"> {/* Reduced vertical space */}
+                    {/* Reduced icon padding (p-5 -> p-4) and icon size (w-10 h-10 -> w-8 h-8) */}
+                    <div className={`inline-flex p-4 ${stat.color} rounded-xl`}>
+                      <stat.icon className="w-8 h-8 text-white" />
+                    </div>
+                    {/* Reduced font size (text-5xl -> text-3xl) */}
+                    <div className="text-3xl font-bold text-slate-900">
+                      {stat.value.toLocaleString()}{stat.suffix}
+                    </div>
+                    {/* Reduced font size (text-xl -> text-lg) */}
+                    <div className="text-lg font-semibold text-slate-600">
+                      {stat.label}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Clear feature highlights with icons - minor reduction for consistency */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto pt-6">
+              {[
+                { icon: CheckCircle, text: "Easy to Learn", color: "text-green-600" },
+                { icon: PlayCircle, text: "Video Lessons", color: "text-blue-600" },
+                { icon: Phone, text: "24/7 Support", color: "text-purple-600" }
+              ].map((feature, index) => (
+                <div 
+                  key={index}
+                  // Reduced padding (p-8 -> p-6)
+                  className="flex flex-col items-center gap-3 p-6 bg-white border-2 border-slate-200 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl hover:scale-105"
+                >
+                  <feature.icon className={`w-10 h-10 ${feature.color}`} /> {/* Slightly reduced icon size */}
+                  <span className="text-lg font-bold text-slate-700">{feature.text}</span> {/* Slightly reduced font size */}
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="text-sm text-slate-600 font-medium">
-            Join <span className="font-bold text-blue-600">10,000+</span> happy users
-          </p>
         </div>
       </div>
 
       <style jsx>{`
-        @keyframes float {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(-20px, -20px) scale(1.05); }
-        }
-
-        @keyframes float-delayed {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(20px, 20px) scale(1.05); }
-        }
-
-        @keyframes float-slow {
-          0%, 100% { transform: translate(-10px, -10px) scale(1); }
-          50% { transform: translate(10px, 10px) scale(1.08); }
-        }
-        
-        @keyframes fade-in-down {
-          0% { opacity: 0; transform: translateY(-20px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes scale-in {
-          0% { opacity: 0; transform: scale(0.95); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes fade-in-up {
-          0% { opacity: 0; transform: translateY(20px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes bounce-in {
-          0% { opacity: 0; transform: scale(0.8); }
-          50% { transform: scale(1.05); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-
-        @keyframes gradient-x {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-
-        @keyframes slide-pattern {
-          0% { transform: translate(0, 0); }
-          100% { transform: translate(50px, 50px); }
-        }
-
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.2; transform: scale(1); }
-          50% { opacity: 0.3; transform: scale(1.1); }
-        }
-
-        @keyframes spin-slow {
+        @keyframes spin {
           from { transform: rotate(0deg); }
           to { transform: rotate(360deg); }
         }
-
-        @keyframes bounce-subtle {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
         
-        .animate-float { animation: float 20s ease-in-out infinite; }
-        .animate-float-delayed { animation: float-delayed 25s ease-in-out infinite; }
-        .animate-float-slow { animation: float-slow 30s ease-in-out infinite; }
-        .animate-fade-in-down { animation: fade-in-down 0.8s ease-out; }
-        .animate-scale-in { animation: scale-in 0.6s ease-out 0.2s both; }
-        .animate-fade-in-up { animation: fade-in-up 0.8s ease-out 0.4s both; }
-        .animate-bounce-in { animation: bounce-in 0.8s ease-out 0.6s both; }
-        .animate-fade-in-up-delay { animation: fade-in-up 0.8s ease-out 0.8s both; }
-        .animate-fade-in-up-late { animation: fade-in-up 0.8s ease-out 1s both; }
-        .animate-gradient-x { 
-          background-size: 200% 100%;
-          animation: gradient-x 3s ease infinite; 
+        .animate-spin {
+          animation: spin 1s linear infinite;
         }
-        .animate-slide-pattern { animation: slide-pattern 60s linear infinite; }
-        .animate-pulse-slow { animation: pulse-slow 4s ease-in-out infinite; }
-        .animate-spin-slow { animation: spin-slow 8s linear infinite; }
-        .animate-bounce-subtle { animation: bounce-subtle 2s ease-in-out infinite; }
-        .animation-delay-1000 { animation-delay: 1s; }
       `}</style>
     </section>
   );

@@ -1,23 +1,47 @@
+/* Reset default browser margins and paddings */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Root container — no extra padding at top */
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 0; /* Removed 2rem to eliminate top/bottom gap */
   text-align: center;
 }
 
+/* Optional: if you still want spacing inside main content */
+main {
+  padding: 2rem;
+}
+
+/* Header layout fix — ensures no top padding or gap */
+header {
+  margin: 0;
+  padding: 0;
+}
+
+/* Logo styles */
 .logo {
   height: 6em;
   padding: 1.5em;
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* Smooth rotation animation */
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -27,16 +51,22 @@
   }
 }
 
+/* Animate the React logo */
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
   }
 }
 
+/* Card design */
 .card {
   padding: 2em;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+/* Docs text */
 .read-the-docs {
   color: #888;
 }

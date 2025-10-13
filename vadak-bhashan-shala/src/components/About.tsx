@@ -4,7 +4,6 @@ import { useLanguage } from "@/contexts/LanguageContext";
 
 const STRAPI_API_URL = import.meta.env.VITE_STRAPI_API_URL;
 
-// ✅ 1. Added subtitle fields to the interface
 interface AboutContent {
   title_en: string;
   title_mr: string;
@@ -44,7 +43,6 @@ const About: React.FC = () => {
           return;
         }
         
-        // ✅ 2. Fetched and set the new subtitle fields
         setContent({
           title_en: entry.title_en || "",
           title_mr: entry.title_mr || "",
@@ -68,60 +66,85 @@ const About: React.FC = () => {
 
   if (!content) {
     return (
-      <div className="py-28 bg-slate-50">
-        <p className="text-center text-slate-600 animate-pulse">Loading content...</p>
+      <div className="py-28 bg-gradient-to-br from-slate-50 to-slate-100">
+        <p className="text-center text-slate-600 animate-pulse text-lg">Loading content...</p>
       </div>
     );
   }
 
   return (
-    <section id="about" className="py-20 md:py-28 bg-slate-50">
+    <section id="about" className="py-24 md:py-32 bg-gradient-to-br from-slate-50 via-white to-slate-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold text-slate-800 tracking-tight">
+        {/* Header Section */}
+        <div className="text-center mb-20">
+          <div className="inline-block mb-4">
+            <span className="text-sm font-semibold tracking-widest text-indigo-600 uppercase">
+              {language === 'mr' ? "आमच्याबद्दल" : "About Us"}
+            </span>
+          </div>
+          <h2 className="text-4xl md:text-6xl font-bold text-slate-900 tracking-tight mb-6 leading-tight">
             {language === 'mr' ? content.title_mr : content.title_en}
           </h2>
-          {/* ✅ 3. Replaced static text with dynamic, multilingual subtitle */}
-          <p className="mt-4 text-lg text-slate-500 max-w-2xl mx-auto">
+          <div className="w-24 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 mx-auto mb-6 rounded-full"></div>
+          <p className="mt-6 text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed font-light">
             {language === 'mr' ? content.subtitle_mr : content.subtitle_en}
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10">
           
-          <div className="lg:col-span-2 bg-white p-8 md:p-10 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <div className="flex items-center text-indigo-600">
-              <Target className="w-8 h-8 mr-4 flex-shrink-0" />
-              <h3 className="text-3xl font-bold text-slate-800">
-                {language === 'mr' ? "आमचे ध्येय" : "Our Mission"}
-              </h3>
+          {/* Mission - Full Width */}
+          <div className="lg:col-span-2 bg-white p-10 md:p-12 rounded-3xl shadow-sm border border-slate-200 hover:shadow-2xl hover:border-indigo-200 transition-all duration-500 group">
+            <div className="flex items-start mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center mr-5 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Target className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                  {language === 'mr' ? "आमचे ध्येय" : "Our Mission"}
+                </h3>
+                <div className="w-16 h-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full"></div>
+              </div>
             </div>
-            <p className="mt-4 text-lg text-slate-600 leading-relaxed whitespace-pre-line">
+            <p className="text-lg md:text-xl text-slate-700 leading-relaxed whitespace-pre-line font-light">
               {language === 'mr' ? content.Mission_mr : content.Mission_en}
             </p>
           </div>
 
-          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <div className="flex items-center text-indigo-600">
-              <Users className="w-8 h-8 mr-4 flex-shrink-0" />
-              <h3 className="text-3xl font-bold text-slate-800">
-                {language === 'mr' ? "आमचा संघ" : "Our Team"}
-              </h3>
+          {/* Our Team */}
+          <div className="bg-white p-10 md:p-12 rounded-3xl shadow-sm border border-slate-200 hover:shadow-2xl hover:border-indigo-200 transition-all duration-500 group">
+            <div className="flex items-start mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mr-5 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <Users className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                  {language === 'mr' ? "आमचा संघ" : "Our Team"}
+                </h3>
+                <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full"></div>
+              </div>
             </div>
-            <p className="mt-4 text-lg text-slate-600 leading-relaxed whitespace-pre-line">
+            <p className="text-lg md:text-xl text-slate-700 leading-relaxed whitespace-pre-line font-light">
               {language === 'mr' ? content.our_team_mr : content.our_team_en}
             </p>
           </div>
 
-          <div className="bg-white p-8 md:p-10 rounded-2xl shadow-lg border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            <div className="flex items-center text-indigo-600">
-              <ShieldCheck className="w-8 h-8 mr-4 flex-shrink-0" />
-              <h3 className="text-3xl font-bold text-slate-800">
-                {language === 'mr' ? "आम्हाला का निवडा?" : "Why Choose Us?"}
-              </h3>
+          {/* Why Choose Us */}
+          <div className="bg-white p-10 md:p-12 rounded-3xl shadow-sm border border-slate-200 hover:shadow-2xl hover:border-indigo-200 transition-all duration-500 group">
+            <div className="flex items-start mb-6">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mr-5 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <ShieldCheck className="w-7 h-7 text-white" />
+              </div>
+              <div>
+                <h3 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                  {language === 'mr' ? "आम्हाला का निवडा?" : "Why Choose Us?"}
+                </h3>
+                <div className="w-16 h-1 bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full"></div>
+              </div>
             </div>
-            <p className="mt-4 text-lg text-slate-600 leading-relaxed whitespace-pre-line">
+            <p className="text-lg md:text-xl text-slate-700 leading-relaxed whitespace-pre-line font-light">
               {language === 'mr' ? content.Why_ChooseUs_mr : content.Why_ChooseUs_en}
             </p>
           </div>
