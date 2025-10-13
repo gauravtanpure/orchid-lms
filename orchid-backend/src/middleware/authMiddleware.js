@@ -12,23 +12,22 @@ export const protect = async (req, res, next) => {
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      
+
       // ----------------------------------------------------------------------
-      // FIX 1: Correctly retrieve user ID from the decoded payload.
-      // We use decoded.user.id, assuming the token payload is { user: { id: ... } }
+      // FIX 1: Retrieve user ID from the decoded payload. Assumes { id: ... } or { user: { id: ... } }
       // ----------------------------------------------------------------------
-      const userId = decoded.user?.id || decoded.id;
+      const userId = decoded.user?.id || decoded.id; 
 
       // Get user from token (exclude password)
       const user = await User.findById(userId).select('-password');
-      
+
       // ----------------------------------------------------------------------
-      // FIX 2: Check if the user was found in the database.
+      // FIX 2: Check if the user was found in the database. 
       // This prevents the "Cannot read properties of null (reading 'email')" crash.
       // ----------------------------------------------------------------------
       if (!user) {
-        console.error('🔴 Auth Middleware Error: Token is valid but user ID not found in database.');
-        return res.status(401).json({ message: 'Not authorized, user not found (deleted or invalid ID).' });
+        console.error('🔴 Auth Middleware Error: Token valid but user not found in DB.');
+        return res.status(401).json({ message: 'Not authorized, user not found.' });
       }
 
       req.user = user;
@@ -36,7 +35,6 @@ export const protect = async (req, res, next) => {
 
       next();
     } catch (error) {
-      // This catches errors like expired token, invalid signature, or wrong JWT_SECRET
       console.error('🔴 Auth Middleware Error:', error.message);
       res.status(401).json({ message: 'Not authorized, token failed' });
     }

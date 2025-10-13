@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { format } from 'date-fns';
-import { PlusCircle, Edit, Trash2, Search, Loader2 } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Search, Loader2, UploadCloud } from 'lucide-react';
 
 // --- UI Components ---
 import { Button } from '../../components/ui/button';
@@ -18,10 +18,16 @@ interface BlogPost {
   title: { en: string; mr: string };
   excerpt: { en: string; mr: string };
   content: { en: string; mr: string };
-  imageUrl: string;
+  imageUrl: string; // URL from Cloudinary
   category: { en: string; mr: string };
   readTime: { en: string; mr: string };
   createdAt: string;
+}
+
+// Separate state for file/image input
+interface CurrentBlogState extends Omit<BlogPost, '_id' | 'createdAt'> {
+    imageFile: File | null;
+    existingImageUrl: string;
 }
 
 const emptyBlogPost: Omit<BlogPost, '_id' | 'createdAt'> = {
@@ -36,7 +42,7 @@ const emptyBlogPost: Omit<BlogPost, '_id' | 'createdAt'> = {
 const ManageBlogs: React.FC = () => {
     const { toast } = useToast();
     // ------------------------------------------------------------------
-    // FIX: Correctly destructure user, token, and rename isLoading to authLoading
+    // FIX: Correctly destructure user and token from useAuth
     // ------------------------------------------------------------------
     const { user, token, isLoading: authLoading } = useAuth();
     const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
@@ -45,15 +51,15 @@ const ManageBlogs: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentBlog, setCurrentBlog] = useState<BlogPost | Omit<BlogPost, '_id' | 'createdAt'>>(emptyBlogPost);
+    
+    // ⬇️ UPDATED STATE TYPE for handling file and existing URL separately
+    const [currentBlog, setCurrentBlog] = useState<CurrentBlogState>({
+        ...emptyBlogPost,
+        imageFile: null,
+        existingImageUrl: '',
+    });
+    
     const [searchTerm, setSearchTerm] = useState('');
-
-    // Debug: Log auth state with corrected variables
-    useEffect(() => {
-        console.log('User State:', user);
-        console.log('Auth Token:', token);
-        console.log('User Role:', user?.role);
-    }, [user, token]);
 
     // Fetch blogs
     useEffect(() => {
@@ -77,10 +83,11 @@ const ManageBlogs: React.FC = () => {
         }
     };
 
+    // Helper for structured input changes
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>, 
         lang: 'en' | 'mr', 
-        field: keyof Omit<BlogPost, '_id' | 'createdAt'>
+        field: 'title' | 'excerpt' | 'content' | 'category' | 'readTime'
     ) => {
         const { value } = e.target;
         setCurrentBlog(prev => {
@@ -95,31 +102,47 @@ const ManageBlogs: React.FC = () => {
         });
     };
 
-    const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setCurrentBlog(prev => ({
-            ...prev,
-            imageUrl: e.target.value,
-        }));
+    // ⬇️ NEW: Handle file selection
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            setCurrentBlog(prev => ({
+                ...prev,
+                imageFile: e.target.files![0],
+            }));
+        } else {
+            setCurrentBlog(prev => ({
+                ...prev,
+                imageFile: null,
+            }));
+        }
     };
 
+    // Open Create Modal
     const openCreateModal = () => {
-        setCurrentBlog(emptyBlogPost);
+        setCurrentBlog({ 
+            ...emptyBlogPost,
+            imageFile: null,
+            existingImageUrl: '',
+        });
         setIsEditing(false);
         setIsModalOpen(true);
     };
 
+    // Open Edit Modal
     const openEditModal = (blog: BlogPost) => {
-        setCurrentBlog(blog);
+        setCurrentBlog({ 
+            ...blog,
+            imageFile: null, // Clear file on edit open
+            existingImageUrl: blog.imageUrl, // Store current URL
+        });
         setIsEditing(true);
         setIsModalOpen(true);
     };
 
+    // Delete Blog (Logic remains the same, but uses the corrected token)
     const deleteBlog = async (id: string) => {
         if (!window.confirm('Are you sure you want to delete this blog post?')) return;
 
-        // ------------------------------------------------------------------
-        // FIX: Use 'token' directly
-        // ------------------------------------------------------------------
         if (!token) {
             toast({
                 title: "Authentication Required",
@@ -133,7 +156,6 @@ const ManageBlogs: React.FC = () => {
             const config = {
                 headers: {
                     'Content-Type': 'application/json',
-                    // FIX: Use 'token' directly
                     Authorization: `Bearer ${token}`,
                 },
             };
@@ -155,12 +177,10 @@ const ManageBlogs: React.FC = () => {
         }
     };
 
+    // ⬇️ MAJOR CHANGE: Handle Submit for File Upload
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // ------------------------------------------------------------------
-        // FIX: Use 'token' directly
-        // ------------------------------------------------------------------
         if (!token) {
             toast({
                 title: "Authentication Required",
@@ -169,22 +189,67 @@ const ManageBlogs: React.FC = () => {
             });
             return;
         }
+        
+        // Validation check for new posts or updates without an image
+        if (!isEditing && !currentBlog.imageFile) {
+            toast({
+                title: "Image Required",
+                description: "Please upload an image for the new blog post.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        // Check for updates where no file is selected and no existing URL is present
+        if (isEditing && !currentBlog.imageFile && !currentBlog.existingImageUrl) {
+            toast({
+                title: "Image Required",
+                description: "Please upload an image or ensure an existing one is loaded.",
+                variant: "destructive",
+            });
+            return;
+        }
 
         setLoading(true);
 
+        // 1. Prepare FormData for file upload
+        const formData = new FormData();
+        
+        // Append all text fields as JSON strings
+        // This is necessary because FormData treats all values as strings, 
+        // and we need to reconstruct the nested object structure on the backend.
+        formData.append('title', JSON.stringify(currentBlog.title));
+        formData.append('excerpt', JSON.stringify(currentBlog.excerpt));
+        formData.append('content', JSON.stringify(currentBlog.content));
+        formData.append('category', JSON.stringify(currentBlog.category));
+        formData.append('readTime', JSON.stringify(currentBlog.readTime));
+        
+        // 2. Append the image file if selected
+        if (currentBlog.imageFile) {
+            // 'image' must match the key used in multerMiddleware.js (upload.single('image'))
+            formData.append('image', currentBlog.imageFile); 
+        }
+        
+        // 3. Append existing URL for update endpoint
+        if (isEditing) {
+            formData.append('existingImageUrl', currentBlog.existingImageUrl);
+        }
+
+
         try {
+            // Note: Axios automatically sets the Content-Type to multipart/form-data 
+            // when it detects a FormData object, so we only need to pass the Authorization header.
             const config = {
                 headers: {
-                    'Content-Type': 'application/json',
-                    // FIX: Use 'token' directly
                     Authorization: `Bearer ${token}`,
                 },
             };
 
-            if (isEditing && '_id' in currentBlog) {
+            if (isEditing) {
+                // If editing, use PUT request
                 await axios.put(
-                    `${API_URL}/api/blogs/${currentBlog._id}`,
-                    currentBlog,
+                    `${API_URL}/api/blogs/${(currentBlog as BlogPost)._id}`,
+                    formData, // Send FormData
                     config
                 );
                 toast({
@@ -192,9 +257,10 @@ const ManageBlogs: React.FC = () => {
                     description: 'Blog post successfully updated.',
                 });
             } else {
+                // If creating, use POST request
                 await axios.post(
                     `${API_URL}/api/blogs`,
-                    currentBlog,
+                    formData, // Send FormData
                     config
                 );
                 toast({
@@ -205,9 +271,9 @@ const ManageBlogs: React.FC = () => {
 
             fetchBlogs();
             setIsModalOpen(false);
-            setCurrentBlog(emptyBlogPost);
+            setCurrentBlog({ ...emptyBlogPost, imageFile: null, existingImageUrl: '' }); // Reset form
         } catch (error: any) {
-            console.error('Failed to save blog:', error);
+            console.error('Failed to save blog:', error.response?.data || error);
             const errorMessage = error.response?.data?.message || error.message || 'Unknown error';
             toast({
                 title: "Error",
@@ -227,9 +293,6 @@ const ManageBlogs: React.FC = () => {
     }, [blogs, searchTerm]);
 
     // Show loader if auth is not loaded
-    // ------------------------------------------------------------------
-    // FIX: Use 'user' (which is null if not logged in) for the check
-    // ------------------------------------------------------------------
     if (authLoading || (!user && loading)) {
         return (
             <div className="flex justify-center items-center h-screen">
@@ -240,7 +303,7 @@ const ManageBlogs: React.FC = () => {
 
     return (
         <div className="p-6">
-            {/* --- Header --- */}
+            {/* ... (Header and Search remain the same) ... */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Manage Blog Posts</h1>
                 <Button onClick={openCreateModal} className="flex items-center">
@@ -248,7 +311,6 @@ const ManageBlogs: React.FC = () => {
                 </Button>
             </div>
 
-            {/* --- Search --- */}
             <div className="mb-4 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -259,7 +321,7 @@ const ManageBlogs: React.FC = () => {
                 />
             </div>
 
-            {/* --- Blogs Table --- */}
+            {/* ... (Blogs Table remains the same) ... */}
             <div className="rounded-md border overflow-x-auto">
                 <Table>
                     <TableHeader>
@@ -318,33 +380,35 @@ const ManageBlogs: React.FC = () => {
                     <DialogHeader>
                         <DialogTitle>{isEditing ? 'Edit Blog Post' : 'Create New Blog Post'}</DialogTitle>
                     </DialogHeader>
+                    {/* ⬇️ Form onSubmit remains, but logic is in handleSubmit */}
                     <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                        {/* Title - English */}
+                        {/* Title - English (remains same) */}
                         <label className="grid gap-1.5">
                             <span className="font-medium">Title (English)</span>
                             <Input
-                                value={(currentBlog.title as { en: string; mr: string }).en}
+                                value={currentBlog.title.en}
                                 onChange={(e) => handleInputChange(e, 'en', 'title')}
                                 placeholder="Enter blog title in English"
                                 required
                             />
                         </label>
-                        {/* Title - Marathi */}
+                        {/* Title - Marathi (remains same) */}
                         <label className="grid gap-1.5">
                             <span className="font-medium">Title (Marathi)</span>
                             <Input
-                                value={(currentBlog.title as { en: string; mr: string }).mr}
+                                value={currentBlog.title.mr}
                                 onChange={(e) => handleInputChange(e, 'mr', 'title')}
                                 placeholder="Enter blog title in Marathi"
                                 required
                             />
                         </label>
 
-                        {/* Excerpt - English */}
+                        {/* ... (Excerpt and Content inputs remain the same) ... */}
+                         {/* Excerpt - English */}
                         <label className="grid gap-1.5">
                             <span className="font-medium">Excerpt (English)</span>
                             <Textarea
-                                value={(currentBlog.excerpt as { en: string; mr: string }).en}
+                                value={currentBlog.excerpt.en}
                                 onChange={(e) => handleInputChange(e, 'en', 'excerpt')}
                                 placeholder="Short description in English"
                                 required
@@ -354,7 +418,7 @@ const ManageBlogs: React.FC = () => {
                         <label className="grid gap-1.5">
                             <span className="font-medium">Excerpt (Marathi)</span>
                             <Textarea
-                                value={(currentBlog.excerpt as { en: string; mr: string }).mr}
+                                value={currentBlog.excerpt.mr}
                                 onChange={(e) => handleInputChange(e, 'mr', 'excerpt')}
                                 placeholder="Short description in Marathi"
                                 required
@@ -365,7 +429,7 @@ const ManageBlogs: React.FC = () => {
                         <label className="grid gap-1.5">
                             <span className="font-medium">Content (English)</span>
                             <Textarea
-                                value={(currentBlog.content as { en: string; mr: string }).en}
+                                value={currentBlog.content.en}
                                 onChange={(e) => handleInputChange(e, 'en', 'content')}
                                 placeholder="Full content in English (Markdown supported)"
                                 required
@@ -376,7 +440,7 @@ const ManageBlogs: React.FC = () => {
                         <label className="grid gap-1.5">
                             <span className="font-medium">Content (Marathi)</span>
                             <Textarea
-                                value={(currentBlog.content as { en: string; mr: string }).mr}
+                                value={currentBlog.content.mr}
                                 onChange={(e) => handleInputChange(e, 'mr', 'content')}
                                 placeholder="Full content in Marathi (Markdown supported)"
                                 required
@@ -384,54 +448,68 @@ const ManageBlogs: React.FC = () => {
                             />
                         </label>
 
-                        {/* Image URL */}
-                        <label className="grid gap-1.5">
-                            <span className="font-medium">Image URL</span>
-                            <Input
-                                type="url"
-                                value={currentBlog.imageUrl}
-                                onChange={handleImageUrlChange}
-                                placeholder="URL for the blog post main image"
-                                required
-                            />
-                        </label>
 
-                        {/* Category (English) */}
+                        {/* ⬇️ NEW: Image Upload Input */}
+                        <label className="grid gap-1.5">
+                            <span className="font-medium">Blog Image</span>
+                            <Input
+                                type="file"
+                                onChange={handleFileChange}
+                                accept="image/*"
+                                className="file:text-primary file:font-semibold"
+                            />
+                            {/* Display preview/status */}
+                            <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                                <UploadCloud className="h-3 w-3 mr-1" />
+                                {currentBlog.imageFile 
+                                    ? `File selected: ${currentBlog.imageFile.name}`
+                                    : isEditing 
+                                        ? currentBlog.existingImageUrl 
+                                            ? `Current Image: ${currentBlog.existingImageUrl.substring(0, 50)}...`
+                                            : 'No existing image. Upload new one.'
+                                        : 'Choose an image file to upload (Max 50MB)'
+                                }
+                            </p>
+                        </label>
+                        {/* ⬆️ END NEW: Image Upload Input */}
+
+
+                        {/* Category (English) (remains same) */}
                         <label className="grid gap-1.5">
                             <span className="font-medium">Category (English)</span>
                             <Input
-                                value={(currentBlog.category as { en: string; mr: string }).en}
+                                value={currentBlog.category.en}
                                 onChange={(e) => handleInputChange(e, 'en', 'category')}
                                 placeholder="e.g., Finance, Education"
                                 required
                             />
                         </label>
-                        {/* Category (Marathi) */}
+                        {/* Category (Marathi) (remains same) */}
                         <label className="grid gap-1.5">
                             <span className="font-medium">Category (Marathi)</span>
                             <Input
-                                value={(currentBlog.category as { en: string; mr: string }).mr}
+                                value={currentBlog.category.mr}
                                 onChange={(e) => handleInputChange(e, 'mr', 'category')}
                                 placeholder="उदा. अर्थ, शिक्षण"
                                 required
                             />
                         </label>
                         
-                        {/* Read Time (English) */}
+                        {/* Read Time (English) (remains same) */}
                         <label className="grid gap-1.5">
                             <span className="font-medium">Read Time (English)</span>
                             <Input
-                                value={(currentBlog.readTime as { en: string; mr: string }).en}
+                                value={currentBlog.readTime.en}
                                 onChange={(e) => handleInputChange(e, 'en', 'readTime')}
                                 placeholder="e.g., 5 min read"
                                 required
                             />
                         </label>
-                        {/* Read Time (Marathi) */}
+                        {/* Read Time (Marathi) (remains same) */}
                         <label className="grid gap-1.5">
                             <span className="font-medium">Read Time (Marathi)</span>
                             <Input
-                                value={(currentBlog.readTime as { en: string; mr: string }).mr}
+                                value={currentBlog.readTime.mr}
                                 onChange={(e) => handleInputChange(e, 'mr', 'readTime')}
                                 placeholder="उदा. ५ मिनिटे वाचन"
                                 required

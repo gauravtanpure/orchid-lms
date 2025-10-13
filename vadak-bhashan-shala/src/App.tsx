@@ -18,6 +18,8 @@ import Cart from "./pages/Cart";
 import MyCourses from "./pages/MyCourses";
 import CoursePlayer from "./pages/CoursePlayer";
 import NotFound from "./pages/NotFound";
+// ⬇️ NEW IMPORT: Component to display a single blog article
+import BlogDetails from './pages/BlogDetails'; 
 
 // Admin Pages
 import AdminLayout from "./pages/AdminLayout";
@@ -38,58 +40,64 @@ import ProtectedRoute from "./components/ProtectedRoute"; // Ensures logged-in a
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <LanguageProvider>
-        <AuthProvider>
-          <CartProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                {/* --- Public Routes --- */}
-                <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
-                <Route path="/courses" element={<PublicRoute><Index /></PublicRoute>} />
-                <Route path="/about" element={<PublicRoute><Index /></PublicRoute>} />
-                <Route path="/blogs" element={<PublicRoute><Index /></PublicRoute>} />
-                <Route path="/contact" element={<PublicRoute><Index /></PublicRoute>} />
-                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-                <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <CartProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* --- Public Routes --- */}
+                <Route path="/" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/courses" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/about" element={<PublicRoute><Index /></PublicRoute>} />
+                
+                {/* Route for the blog index page */}
+                <Route path="/blogs" element={<PublicRoute><Index /></PublicRoute>} />
+                
+                {/* ➡️ FIX: Dynamic route for individual blog post ⬅️ */}
+                <Route path="/blog/:blogId" element={<PublicRoute><BlogDetails /></PublicRoute>} />
+                
+                <Route path="/contact" element={<PublicRoute><Index /></PublicRoute>} />
+                <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
+                <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
 
-                {/* --- Logged-in User Routes --- */}
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/my-courses" element={<MyCourses />} />
-                <Route path="/learn/:courseId" element={<CoursePlayer />} />
+                {/* --- Logged-in User Routes --- */}
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/my-courses" element={<MyCourses />} />
+                <Route path="/learn/:courseId" element={<CoursePlayer />} />
 
-                {/* --- Admin Routes --- */}
-                <Route 
-                  path="/admin" 
-                  element={
-                    <ProtectedRoute>
-                      <AdminLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route index element={<AdminDashboard />} />
-                  <Route path="courses" element={<ManageCourses />} />
-                  <Route path="coupons" element={<ManageCoupons />} />
-                  <Route path="blogs" element={<ManageBlogs />} />
-                  <Route path="users" element={<ManageUsers />} />
-                  <Route path="analytics" element={<AdminAnalytics />} />
-                  <Route path="feedback" element={<ManageFeedback />} />
-                  <Route path="profile" element={<AdminProfile />} />
-                  <Route path="settings" element={<AdminSettings />} />
-                </Route>
+                {/* --- Admin Routes --- */}
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  }
+                >
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="courses" element={<ManageCourses />} />
+                  <Route path="coupons" element={<ManageCoupons />} />
+                  <Route path="blogs" element={<ManageBlogs />} />
+                  <Route path="users" element={<ManageUsers />} />
+                  <Route path="analytics" element={<AdminAnalytics />} />
+                  <Route path="feedback" element={<ManageFeedback />} />
+                  <Route path="profile" element={<AdminProfile />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
 
-                {/* --- Catch-all --- */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </CartProvider>
-        </AuthProvider>
-      </LanguageProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+                {/* --- Catch-all --- */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </CartProvider>
+        </AuthProvider>
+      </LanguageProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
