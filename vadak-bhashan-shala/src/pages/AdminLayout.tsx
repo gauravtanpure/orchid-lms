@@ -13,18 +13,10 @@ import {
   Menu,
   X,
   Settings,
-  Tag, // 1. IMPORT THE TAG ICON
+  Tag,
+  Newspaper,
 } from 'lucide-react';
-
-// Mock auth context
-const useAuth = () => ({
-  user: { name: 'Admin User', email: 'admin@orchid.com', role: 'admin' },
-  isLoggedIn: true,
-  logout: () => {
-    // Implement your actual logout logic here
-    console.log('Logging out...');
-  },
-});
+import { useAuth } from '../contexts/AuthContext'; // Corrected import path
 
 const AdminLayout = () => {
   const { user, isLoggedIn, logout } = useAuth();
@@ -35,16 +27,8 @@ const AdminLayout = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // Handle logout logic with local storage clearance
   const handleLogout = () => {
-    // Clear specific items from localStorage
-    localStorage.removeItem('token');
-    localStorage.removeItem('orchid_auth_user');
-
-    // Call the original logout function from the auth context
-    logout();
-
-    // Redirect to the landing page after logout
+    logout(); // Your auth context should handle token removal
     navigate('/');
   };
 
@@ -124,7 +108,14 @@ const AdminLayout = () => {
                 <BookMarked className="h-5 w-5" />
                 <span className="text-sm">Courses</span>
               </NavLink>
-              {/* --- 2. ADD THE NEW LINK HERE --- */}
+              <NavLink
+                to="/admin/blogs"
+                className={linkClass}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Newspaper className="h-5 w-5" />
+                <span className="text-sm">Blogs</span>
+              </NavLink>
               <NavLink
                 to="/admin/coupons"
                 className={linkClass}
@@ -186,9 +177,9 @@ const AdminLayout = () => {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">
-                {user.name}
+                {user?.name || 'Admin'}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
             </div>
           </div>
         </div>

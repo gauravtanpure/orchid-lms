@@ -1,5 +1,5 @@
 // /backend/src/middleware/multerMiddleware.js
-const multer = require('multer');
+import multer from 'multer'; // Import statement
 
 // Configure multer to use memory storage.
 // This temporarily stores files as Buffers in memory.
@@ -12,4 +12,4 @@ const upload = multer({
   },
 });
 
-module.exports = upload;
+export default upload; // Export statement

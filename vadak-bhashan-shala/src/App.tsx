@@ -1,4 +1,3 @@
-// /frontend/src/App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -11,7 +10,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
-// --- Pages ---
+// Pages
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -20,17 +19,21 @@ import MyCourses from "./pages/MyCourses";
 import CoursePlayer from "./pages/CoursePlayer";
 import NotFound from "./pages/NotFound";
 
-// --- Admin Pages ---
+// Admin Pages
 import AdminLayout from "./pages/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageCourses from "./pages/admin/ManageCourses";
-import ManageCoupons from "./pages/admin/ManageCoupons"; // 1. IMPORT THE NEW PAGE
+import ManageCoupons from "./pages/admin/ManageCoupons";
 import ManageUsers from "./pages/admin/ManageUsers";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import ManageFeedback from "./pages/admin/ManageFeedback";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminSettings from "./pages/admin/AdminSettings";
+import ManageBlogs from './pages/admin/ManageBlogs';
+
+// Route Components
 import PublicRoute from "./components/PublicRoute";
+import ProtectedRoute from "./components/ProtectedRoute"; // Ensures logged-in access
 
 const queryClient = new QueryClient();
 
@@ -52,17 +55,25 @@ const App = () => (
                 <Route path="/contact" element={<PublicRoute><Index /></PublicRoute>} />
                 <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
-                
-                {/* --- Routes for logged-in regular users --- */}
+
+                {/* --- Logged-in User Routes --- */}
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/my-courses" element={<MyCourses />} />
                 <Route path="/learn/:courseId" element={<CoursePlayer />} />
 
                 {/* --- Admin Routes --- */}
-                <Route path="/admin" element={<AdminLayout />}>
+                <Route 
+                  path="/admin" 
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  }
+                >
                   <Route index element={<AdminDashboard />} />
                   <Route path="courses" element={<ManageCourses />} />
-                  <Route path="coupons" element={<ManageCoupons />} /> {/* 2. ADD THE NEW ROUTE */}
+                  <Route path="coupons" element={<ManageCoupons />} />
+                  <Route path="blogs" element={<ManageBlogs />} />
                   <Route path="users" element={<ManageUsers />} />
                   <Route path="analytics" element={<AdminAnalytics />} />
                   <Route path="feedback" element={<ManageFeedback />} />
@@ -82,4 +93,3 @@ const App = () => (
 );
 
 export default App;
-

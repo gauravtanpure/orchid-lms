@@ -1,5 +1,5 @@
 // /backend/src/models/Course.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -14,7 +14,6 @@ const courseSchema = new mongoose.Schema({
   videoUrl: { type: String, required: true },
   video_cloudinary_id: { type: String, required: true },
 
-  // --- 👇 NEW: Add this special offer object ---
   specialOffer: {
     isActive: { type: Boolean, default: false },
     discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
@@ -23,4 +22,4 @@ const courseSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Course', courseSchema);
+export default mongoose.model('Course', courseSchema);

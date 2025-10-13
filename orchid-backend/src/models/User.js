@@ -1,5 +1,5 @@
 // /backend/src/models/User.js
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const UserSchema = new mongoose.Schema({
   name: {
@@ -19,7 +19,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: 'user',
   },
-  // 🟢 CORRECT: Track enrolled courses with a completion rate
   enrolledCourses: [
     {
       courseId: {
@@ -32,11 +31,10 @@ const UserSchema = new mongoose.Schema({
       },
     },
   ],
-  // -------------------------------------------------------------
   date: {
     type: Date,
     default: Date.now,
   },
 });
 
-module.exports = mongoose.model('User', UserSchema);
+export default mongoose.model('User', UserSchema);

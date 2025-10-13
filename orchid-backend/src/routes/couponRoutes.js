@@ -1,10 +1,11 @@
 // /backend/src/routes/couponRoutes.js
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const Coupon = require('../models/Coupon');
-// Note: In a real app, you'd protect admin routes with middleware, e.g., const { isAdmin } = require('../middleware/authMiddleware');
+import Coupon from '../models/Coupon.js'; // MUST ADD .js
+import { protect } from '../middleware/authMiddleware.js'; // MUST ADD .js
+import { adminMiddleware } from '../middleware/adminMiddleware.js'; // MUST ADD .js
 
-// GET all active coupons (You already have this)
+// GET all active coupons (Public)
 router.get('/', async (req, res) => {
   try {
     const coupons = await Coupon.find({ isActive: true });
@@ -15,14 +16,8 @@ router.get('/', async (req, res) => {
   }
 });
 
-// ---------------------------------------------------
-// --- NEW: Admin & Validation Routes ---
-// ---------------------------------------------------
-
-// GET all coupons (for Admin Panel)
-// We need a route to get ALL coupons, including inactive ones for the admin.
-// In a real app, protect this with: router.get('/all', isAdmin, async (req, res) => { ... });
-router.get('/all', async (req, res) => {
+// GET all coupons (for Admin Panel) - Protected
+router.get('/all', protect, adminMiddleware, async (req, res) => {
   try {
     const coupons = await Coupon.find({}).sort({ createdAt: -1 });
     res.status(200).json(coupons);
@@ -32,8 +27,8 @@ router.get('/all', async (req, res) => {
 });
 
 
-// POST: Create a new coupon (Admin only)
-router.post('/', async (req, res) => {
+// POST: Create a new coupon (Admin only) - Protected
+router.post('/', protect, adminMiddleware, async (req, res) => {
   try {
     const { code, discount, type, description, minAmount } = req.body;
     
@@ -64,7 +59,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// POST: Validate a coupon for the user's cart
+// POST: Validate a coupon for the user's cart (Public)
 router.post('/validate', async (req, res) => {
   try {
     const { code, subtotal } = req.body;
@@ -94,8 +89,8 @@ router.post('/validate', async (req, res) => {
   }
 });
 
-// PUT: Update a coupon (Admin only)
-router.put('/:id', async (req, res) => {
+// PUT: Update a coupon (Admin only) - Protected
+router.put('/:id', protect, adminMiddleware, async (req, res) => {
     try {
         const updatedCoupon = await Coupon.findByIdAndUpdate(
             req.params.id, 
@@ -111,10 +106,11 @@ router.put('/:id', async (req, res) => {
     }
 });
 
-// DELETE: Delete a coupon (Admin only)
-router.delete('/:id', async (req, res) => {
+// DELETE: Delete a coupon (Admin only) - Protected
+router.delete('/:id', protect, adminMiddleware, async (req, res) => {
     try {
-        const deletedCoupon = await Coupon.findByIdAndDelete(req.params.id);
+        // Use findByIdAndDelete (Mongoose 8+)
+        const deletedCoupon = await Coupon.findByIdAndDelete(req.params.id); 
         if (!deletedCoupon) {
             return res.status(404).json({ message: 'Coupon not found.' });
         }
@@ -125,4 +121,4 @@ router.delete('/:id', async (req, res) => {
 });
 
 
-module.exports = router;
+export default router; // Export statement

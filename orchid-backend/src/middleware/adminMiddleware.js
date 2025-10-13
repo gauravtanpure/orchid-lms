@@ -1,14 +1,17 @@
-// /backend/src/middleware/adminMiddleware.js
+export const adminMiddleware = (req, res, next) => {
+  console.log('🟡 Admin Middleware - Checking user role...');
+  console.log('User from request:', req.user);
+  console.log('User role:', req.user?.role);
 
-const admin = (req, res, next) => {
-  // Check if a user is attached to the request (from the 'protect' middleware)
-  // and if that user has the 'admin' role.
   if (req.user && req.user.role === 'admin') {
-    next(); // User is an admin, proceed to the next function
+    console.log('🟢 Admin Middleware - User is admin, access granted');
+    next();
   } else {
-    // If not an admin, send a 403 Forbidden error
-    res.status(403).json({ message: 'Not authorized as an admin' });
+    console.error('🔴 Admin Middleware - Access denied. User role:', req.user?.role);
+    res.status(403).json({ 
+      message: 'Access denied. Admin privileges required.',
+      userRole: req.user?.role,
+      userId: req.user?._id
+    });
   }
 };
-
-module.exports = { admin };

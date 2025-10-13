@@ -1,9 +1,9 @@
 // /backend/src/routes/userRoutes.js
-const express = require('express');
+import express from 'express';
 const router = express.Router();
-const User = require('../models/User');
-const Course = require('../models/Course'); // Course model is imported but not used in the routes below
-const { protect } = require('../middleware/authMiddleware');
+import User from '../models/User.js'; // MUST ADD .js
+import Course from '../models/Course.js'; // MUST ADD .js
+import { protect } from '../middleware/authMiddleware.js'; // MUST ADD .js
 
 // @desc    Enroll user in courses after "payment"
 // @route   POST /api/users/enroll
@@ -58,8 +58,9 @@ router.get('/my-courses', protect, async (req, res) => {
 
         res.status(200).json(myCourses);
     } catch (error) {
-        res.status(500).json({ message: 'Server error fetching enrolled courses.' });
+        res.status(500).json({ message: 'Server error fetching user courses.' });
     }
 });
 
-module.exports = router;
+
+export default router; // Export statement
