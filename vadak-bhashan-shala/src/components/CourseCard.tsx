@@ -130,7 +130,7 @@ const CourseCard: React.FC<Course> = (course) => {
                 </Button>
               </Link>
             ) : isInCart ? (
-               <Link to="/cart" className="w-full"> 
+              <Link to="/cart" className="w-full"> 
                 <Button size="sm" variant="outline" className="w-full">
                   <ShoppingCart className="w-4 h-4 mr-2" />{t('goToCart')}
                 </Button>
@@ -140,6 +140,7 @@ const CourseCard: React.FC<Course> = (course) => {
                 <ShoppingCart className="w-4 h-4 mr-2" />{t('addToCart')}
               </Button>
             )}
+
           </div>
         </div>
       </div>
