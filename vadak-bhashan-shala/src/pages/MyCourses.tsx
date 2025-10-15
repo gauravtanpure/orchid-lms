@@ -106,37 +106,47 @@ const MyCourses: React.FC = () => {
           <>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {currentCourses.map((course) => {
-                // ✅ FIX: determine safe navigation path
-                const coursePath = course.slug 
-                  ? `/learn/${course.slug}` 
-                  : `/learn/${course._id}`;
+  // ✅ ensure slug is always available
+  const slug = course.slug || '';
 
-                return (
-                  <Card key={course._id} className="hover:shadow-xl transition-shadow duration-300">
-                    <CardHeader>
-                      <CardTitle className="text-lg text-indigo-700">{course.title}</CardTitle>
-                      <CardDescription className="text-sm">
-                        Progress: {course.completionRate.toFixed(0)}% Complete
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-gray-600 line-clamp-2 mb-4">{course.description}</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
-                        <div
-                          className="bg-green-500 h-2.5 rounded-full"
-                          style={{ width: `${course.completionRate}%` }}
-                        />
-                      </div>
-                      <Link to={coursePath}>
-                        <Button variant="default" className="w-full bg-green-500 hover:bg-green-600">
-                          Continue Learning
-                          <ChevronRight className="w-4 h-4 ml-2" />
-                        </Button>
-                      </Link>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+  return (
+    <Card key={course._id} className="hover:shadow-xl transition-shadow duration-300">
+      <CardHeader>
+        <CardTitle className="text-lg text-indigo-700">{course.title}</CardTitle>
+        <CardDescription className="text-sm">
+          Progress: {course.completionRate.toFixed(0)}% Complete
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-gray-600 line-clamp-2 mb-4">{course.description}</p>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+          <div
+            className="bg-green-500 h-2.5 rounded-full"
+            style={{ width: `${course.completionRate}%` }}
+          />
+        </div>
+        {slug ? (
+          <Link to={`/learn/${slug}`}>
+            <Button variant="default" className="w-full bg-green-500 hover:bg-green-600">
+              Continue Learning
+              <ChevronRight className="w-4 h-4 ml-2" />
+            </Button>
+          </Link>
+        ) : (
+          // 🔁 Fallback for older enrollments missing slug
+          <Button
+            variant="outline"
+            className="w-full bg-yellow-400/80 hover:bg-yellow-500 text-black"
+            onClick={() => alert('This course was enrolled before slugs were added. Please re-enroll.')}
+          >
+            Missing Slug – Re-Enroll Needed
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+})}
+
             </div>
 
             {totalPages > 1 && (

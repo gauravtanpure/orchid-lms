@@ -12,15 +12,15 @@ const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 interface CourseDetails {
   _id: string;
   title: string;
-  description: string;
+  description?: string;
   videoUrl: string;
   instructor: string;
   slug: string;
-  lessons: { title: string; duration: number }[];
+  lessons?: { title: string; duration: number }[];
 }
 
 /**
- * ✅ FIXED: Include token in the Authorization header.
+ * ✅ Fetch course details (requires auth token)
  */
 const fetchCourseBySlug = async (courseSlug: string, token: string | null): Promise<CourseDetails> => {
   if (!courseSlug || courseSlug === 'undefined') {
@@ -33,7 +33,7 @@ const fetchCourseBySlug = async (courseSlug: string, token: string | null): Prom
     },
   };
 
-  console.log(`Fetching course from: ${API_URL}/api/courses/${courseSlug}`, 'with token:', !!token);
+  console.log(`🟢 Fetching course: ${API_URL}/api/courses/${courseSlug}`, 'Token Present:', !!token);
 
   const { data } = await axios.get(`${API_URL}/api/courses/${courseSlug}`, config);
   return data;
@@ -41,13 +41,28 @@ const fetchCourseBySlug = async (courseSlug: string, token: string | null): Prom
 
 const CoursePlayer: React.FC = () => {
   const { courseId: courseSlug } = useParams<{ courseId: string }>();
-  const { isLoggedIn, isEnrolled, token } = useAuth();
+  const { isLoggedIn, token, user } = useAuth();
 
   if (!courseSlug) {
     return <Navigate to="/404" replace />;
   }
 
-  const isUserEnrolled = isEnrolled(courseSlug);
+  // ✅ FIX: Flexible enrollment check — handles both ID or slug-based enrollment
+  const isUserEnrolled =
+    isLoggedIn &&
+    user?.enrolledCourses?.some((enrollment) => {
+      const courseData = enrollment.courseId;
+      if (!courseData) return false;
+
+      // Handle both object or string format from backend
+      if (typeof courseData === 'object') {
+        return (
+          courseData._id === courseSlug ||
+          courseData.slug === courseSlug
+        );
+      }
+      return courseData === courseSlug;
+    });
 
   const {
     data: course,
@@ -85,6 +100,7 @@ const CoursePlayer: React.FC = () => {
     );
   }
 
+  // ✅ If user is not enrolled, show warning
   if (!isUserEnrolled) {
     return (
       <div className="flex h-screen flex-col items-center justify-center p-8 bg-yellow-50">
@@ -98,6 +114,7 @@ const CoursePlayer: React.FC = () => {
     );
   }
 
+  // ✅ Authorized + course found → render player
   return (
     <div className="min-h-screen grid lg:grid-cols-4">
       <main className="lg:col-span-3 bg-black flex flex-col">
@@ -111,11 +128,14 @@ const CoursePlayer: React.FC = () => {
         <div className="p-6 text-white">
           <h1 className="text-3xl font-bold">{course.title}</h1>
           <p className="text-lg text-muted-foreground mt-1">by {course.instructor}</p>
-          <div className="mt-4 text-gray-400">
-            <p>{course.description}</p>
-          </div>
+          {course.description && (
+            <div className="mt-4 text-gray-400">
+              <p>{course.description}</p>
+            </div>
+          )}
         </div>
       </main>
+
       <aside className="lg:col-span-1 bg-card border-l p-6 flex flex-col">
         <Link
           to="/my-courses"
@@ -124,22 +144,24 @@ const CoursePlayer: React.FC = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to My Courses
         </Link>
+
         <h2 className="text-xl font-semibold mb-4">Course Content</h2>
         <div className="flex-grow overflow-y-auto space-y-2">
-          {course.lessons?.map((lesson, index) => (
-            <div
-              key={index}
-              className="p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
-            >
-              <p className="font-semibold text-sm">
-                Module {index + 1}: {lesson.title}
-              </p>
-              <p className="text-xs text-muted-foreground">{lesson.duration} mins</p>
-            </div>
-          ))}
-          {!course.lessons || course.lessons.length === 0 ? (
+          {course.lessons?.length ? (
+            course.lessons.map((lesson, index) => (
+              <div
+                key={index}
+                className="p-3 rounded-lg hover:bg-muted cursor-pointer transition-colors"
+              >
+                <p className="font-semibold text-sm">
+                  Module {index + 1}: {lesson.title}
+                </p>
+                <p className="text-xs text-muted-foreground">{lesson.duration} mins</p>
+              </div>
+            ))
+          ) : (
             <p className="text-sm text-muted-foreground">No lessons found for this course.</p>
-          ) : null}
+          )}
         </div>
       </aside>
     </div>

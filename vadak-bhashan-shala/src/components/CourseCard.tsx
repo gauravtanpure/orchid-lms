@@ -55,14 +55,17 @@ const CourseCard: React.FC<Course> = (course) => {
       });
       return;
     }
-    addToCart({ 
-      id: _id, 
-      title, 
-      price: finalPrice, 
-      image: thumbnailUrl, 
-      instructor,
-      language: course.language,
-    });
+    addToCart({
+    _id,                // ✅ must use _id, not id
+    id: _id,            // optional duplicate for safety
+    title,
+    price: finalPrice,
+    image: thumbnailUrl,
+    instructor,
+    language: course.language,
+    slug: course.slug,  // ✅ add slug so we can later link to it
+  });
+
     toast({
       title: t('courseAdded'),
       description: `${title} ${t('addedToCart')}`,

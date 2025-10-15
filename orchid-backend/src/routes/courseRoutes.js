@@ -125,23 +125,32 @@ router.get('/:courseId', protect, async (req, res) => {
     }
 
     // --- Enrollment Check ---
-    const userId = req.user.id;
+    // --- Enrollment Check ---
+const userId = req.user.id;
 
-    // ✅ Safe check: Skip any enrollment entries with null courseId
-    const isEnrolled =
-      Array.isArray(req.user.enrolledCourses) &&
-      req.user.enrolledCourses.some(
-        (enrollment) =>
-          enrollment.courseId &&
-          enrollment.courseId.toString() === course._id.toString()
-      );
+console.log('🟢 DEBUG Enrollment check for user:', req.user._id);
+console.log('🟢 Course _id:', course._id);
+console.log('🟢 User enrolledCourses:', req.user.enrolledCourses);
 
-    if (!isEnrolled && req.user.role !== 'admin') {
-      console.log(`User ${userId} not authorized to view course ${courseSlugOrId}`);
-      return res
-        .status(403)
-        .json({ message: 'Not authorized, user is not enrolled in this course.' });
-    }
+const isEnrolled =
+  Array.isArray(req.user.enrolledCourses) &&
+  req.user.enrolledCourses.some((enrollment) => {
+    if (!enrollment.courseId) return false;
+    // Handle both populated and unpopulated course references
+    const enrolledId =
+      typeof enrollment.courseId === 'object' && enrollment.courseId._id
+        ? enrollment.courseId._id.toString()
+        : enrollment.courseId.toString();
+    return enrolledId === course._id.toString();
+  });
+
+if (!isEnrolled && req.user.role !== 'admin') {
+  console.log(`🔴 User ${userId} not authorized to view course ${courseSlugOrId}`);
+  return res.status(403).json({
+    message: 'Not authorized, user is not enrolled in this course.',
+  });
+}
+
 
     // ✅ Return the course if found and authorized
     res.status(200).json(course);
