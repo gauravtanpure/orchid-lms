@@ -1,319 +1,158 @@
-// // /frontend/src/pages/MyCourses.tsx
-// import React from 'react';
-// import { useAuth } from '@/contexts/AuthContext';
-// import { useLanguage } from '@/contexts/LanguageContext';
-// import { BookOpen, ChevronRight, GraduationCap, Loader2 } from 'lucide-react';
-// import { Link, Navigate } from 'react-router-dom';
-// import { Button } from '@/components/ui/button';
-// import { Card, CardContent } from '@/components/ui/card';
-// import Header from '@/components/Header';
-// import Footer from '@/components/Footer';
-// import { useQuery } from '@tanstack/react-query';
-// import axios from 'axios';
-// import { Course } from '@/types';
-
-// const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
-
-// const fetchEnrolledCourses = async (token: string | null): Promise<Course[]> => {
-//   if (!token) return [];
-//   const config = { headers: { Authorization: `Bearer ${token}` } };
-//   const { data } = await axios.get(`${API_URL}/api/users/my-courses`, config);
-//   return data;
-// };
-
-// const MyCourses: React.FC = () => {
-//   const { user, isLoggedIn, isLoading: isAuthLoading, token } = useAuth();
-//   const { t } = useLanguage();
-
-//   const { data: enrolledCourses = [], isLoading: areCoursesLoading } = useQuery<Course[]>({
-//     queryKey: ['myCourses', user?._id],
-//     queryFn: () => fetchEnrolledCourses(token),
-//     enabled: !isAuthLoading && !!user && !!token,
-//   });
-
-//   if (isAuthLoading) {
-//     return <div className="min-h-screen bg-background flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-//   }
-
-//   if (!isLoggedIn) {
-//     return <Navigate to="/login" replace />;
-//   }
-  
-//   return (
-//     <div className="min-h-screen bg-background">
-//       <Header />
-//       <main className="container mx-auto px-4 py-8">
-//         <h1 className="text-3xl font-heading font-bold mb-8 flex items-center">
-//           <BookOpen className="h-7 w-7 mr-3 text-primary" />{t('myCourses')}
-//         </h1>
-//         {areCoursesLoading ? (
-//           <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-//         ) : enrolledCourses.length === 0 ? (
-//           <div className="text-center py-16 border border-border rounded-lg bg-card shadow-sm"><GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-4" /><h2 className="text-xl font-semibold mb-2">{t('noCoursesEnrolled')}</h2><p className="text-muted-foreground mb-6">{t('startLearningJourney')}</p><Link to="/courses"><Button>{t('courses')}</Button></Link></div>
-//         ) : (
-//           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-//             {enrolledCourses.map((course) => (
-//               <Card key={course._id} className="group hover:shadow-xl transition-shadow duration-300">
-//                 <CardContent className="p-0">
-//                   <div className="relative aspect-video overflow-hidden rounded-t-lg"><img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" /></div>
-//                   <div className="p-4">
-//                     <h3 className="text-lg font-semibold text-card-foreground line-clamp-2 mb-2 h-14">{course.title}</h3>
-//                     <p className="text-sm text-muted-foreground mb-3">{t('by')} {course.instructor}</p>
-//                     <div className="flex items-center justify-end">
-//                       <Link to={`/learn/${course._id}`}>
-//                         <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">
-//                           {course.completionRate === 0 ? t('startLearning') : t('continueLearning')} 
-//                           <ChevronRight className="w-4 h-4 ml-1" />
-//                         </Button>
-//                       </Link>
-//                     </div>
-//                   </div>
-//                 </CardContent>
-//               </Card>
-//             ))}
-//           </div>
-//         )}
-//       </main>
-//       <Footer />
-//     </div>
-//   );
-// };
-
-// export default MyCourses;
-
-// /frontend/src/pages/MyCourses.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { BookOpen, ChevronRight, GraduationCap, Loader2, Search, Filter, ChevronLeft } from 'lucide-react';
-import { Link, Navigate } from 'react-router-dom';
+import { BookOpen, ChevronRight, GraduationCap, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Header from '@/components/Header';
-import Footer from '@/components/Footer';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { Course } from '@/types';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+
+interface Course {
+  _id: string;
+  title: string;
+  description: string;
+  slug?: string; // ✅ make optional for older enrollments
+  category: string;
+  completionRate: number;
+}
 
 const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
 const fetchEnrolledCourses = async (token: string | null): Promise<Course[]> => {
   if (!token) return [];
-  const config = { headers: { Authorization: `Bearer ${token}` } };
-  const { data } = await axios.get(`${API_URL}/api/users/my-courses`, config);
+
+  const config = { 
+    headers: { 
+      Authorization: `Bearer ${token}`,
+      'Cache-Control': 'no-store',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'If-Modified-Since': '0'
+    }
+  };
+
+  const url = `${API_URL}/api/users/my-courses`;
+  const { data } = await axios.get(url, config);
   return data;
 };
 
 const MyCourses: React.FC = () => {
-  const { user, isLoggedIn, isLoading: isAuthLoading, token } = useAuth();
-  const { t } = useLanguage();
-  
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sortBy, setSortBy] = useState('recent');
+  const { user, isLoggedIn, token } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const coursesPerPage = 6;
 
-  const { data: enrolledCourses = [], isLoading: areCoursesLoading } = useQuery<Course[]>({
-    queryKey: ['myCourses', user?._id],
+  const queryKey = ['enrolledCourses', user?.id];
+  const { data: enrolledCourses = [], isLoading, isError, error, refetch } = useQuery<Course[]>({
+    queryKey,
     queryFn: () => fetchEnrolledCourses(token),
-    enabled: !isAuthLoading && !!user && !!token,
+    enabled: isLoggedIn && !!token,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
-  // Filter and sort courses
-  const filteredAndSortedCourses = useMemo(() => {
-    let filtered = enrolledCourses.filter(course => 
-      course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      course.instructor.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  useEffect(() => {
+    const handleCourseUpdate = () => refetch();
+    window.addEventListener('courses-updated', handleCourseUpdate);
+    return () => window.removeEventListener('courses-updated', handleCourseUpdate);
+  }, [refetch]);
 
-    // Sort courses
-    filtered.sort((a, b) => {
-      switch (sortBy) {
-        case 'title':
-          return a.title.localeCompare(b.title);
-        case 'progress':
-          return (b.completionRate || 0) - (a.completionRate || 0);
-        case 'recent':
-        default:
-          return 0; // Keep original order (most recent enrollments first)
-      }
-    });
-
-    return filtered;
-  }, [enrolledCourses, searchQuery, sortBy]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredAndSortedCourses.length / coursesPerPage);
-  const startIndex = (currentPage - 1) * coursesPerPage;
-  const endIndex = startIndex + coursesPerPage;
-  const currentCourses = filteredAndSortedCourses.slice(startIndex, endIndex);
-
-  // Reset to page 1 when filters change
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, sortBy]);
-
-  if (isAuthLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const totalCourses = enrolledCourses.length;
+  const totalPages = Math.ceil(totalCourses / coursesPerPage);
+  const currentCourses = useMemo(() => {
+    const startIndex = (currentPage - 1) * coursesPerPage;
+    return enrolledCourses.slice(startIndex, startIndex + coursesPerPage);
+  }, [enrolledCourses, currentPage]);
 
   if (!isLoggedIn) {
-    return <Navigate to="/login" replace />;
+    return <p className="text-center p-8">Please log in to view your courses.</p>;
   }
-  
-  return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="container mx-auto px-4 py-8">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-heading font-bold mb-2 flex items-center">
-            <BookOpen className="h-7 w-7 mr-3 text-primary" />
-            {t('myCourses')}
-          </h1>
-          <p className="text-muted-foreground">
-            {enrolledCourses.length} {enrolledCourses.length === 1 ? 'course' : 'courses'} enrolled
-          </p>
-        </div>
 
-        {areCoursesLoading ? (
-          <div className="flex justify-center py-16">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-grow container mx-auto px-4 py-8">
+        <h1 className="text-4xl font-extrabold mb-8 text-gray-800 flex items-center">
+          <GraduationCap className="w-8 h-8 mr-3 text-indigo-600" />
+          My Enrolled Courses
+        </h1>
+
+        {isLoading ? (
+          <div className="flex justify-center items-center h-48">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+            <span className="ml-2 text-lg text-gray-600">Loading your course list...</span>
           </div>
-        ) : enrolledCourses.length === 0 ? (
-          <div className="text-center py-16 border border-border rounded-lg bg-card shadow-sm">
-            <GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">{t('noCoursesEnrolled')}</h2>
-            <p className="text-muted-foreground mb-6">{t('startLearningJourney')}</p>
+        ) : isError ? (
+          <Card className="border-red-500 bg-red-50">
+            <CardContent className="p-4 text-red-700">
+              <p className="font-semibold">Error Loading Courses</p>
+              <p>{(error as Error).message}</p>
+              <Button onClick={() => refetch()} variant="outline" className="mt-2 text-red-700 border-red-500 hover:bg-red-100">
+                Try Again
+              </Button>
+            </CardContent>
+          </Card>
+        ) : totalCourses === 0 ? (
+          <div className="text-center p-12 border border-dashed rounded-lg bg-white">
+            <BookOpen className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+            <h2 className="text-xl font-semibold text-gray-700">You are not currently enrolled in any courses.</h2>
+            <p className="text-gray-500 mt-2">Browse the catalog to find your next course!</p>
             <Link to="/courses">
-              <Button>{t('courses')}</Button>
+              <Button className="mt-4 bg-indigo-600 hover:bg-indigo-700">Browse Courses</Button>
             </Link>
           </div>
         ) : (
           <>
-            {/* Filters Section */}
-            <div className="mb-6 flex flex-col sm:flex-row gap-4">
-              {/* Search Input */}
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Search courses by title or instructor..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {currentCourses.map((course) => {
+                // ✅ FIX: determine safe navigation path
+                const coursePath = course.slug 
+                  ? `/learn/${course.slug}` 
+                  : `/learn/${course._id}`;
 
-              {/* Sort Dropdown */}
-              <div className="flex items-center gap-2 sm:w-auto w-full">
-                <Filter className="h-4 w-4 text-muted-foreground hidden sm:block" />
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="sm:w-[180px] w-full">
-                    <SelectValue placeholder="Sort by" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="recent">Most Recent</SelectItem>
-                    <SelectItem value="title">Title (A-Z)</SelectItem>
-                    <SelectItem value="progress">Progress</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Results Info */}
-            {searchQuery && (
-              <div className="mb-4 text-sm text-muted-foreground">
-                Found {filteredAndSortedCourses.length} {filteredAndSortedCourses.length === 1 ? 'course' : 'courses'}
-              </div>
-            )}
-
-            {/* Courses Grid */}
-            {currentCourses.length === 0 ? (
-              <div className="text-center py-16 border border-border rounded-lg bg-card">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No courses found</h3>
-                <p className="text-muted-foreground">Try adjusting your search or filters</p>
-              </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {currentCourses.map((course) => (
-                  <Card key={course._id} className="group hover:shadow-xl transition-all duration-300 border-border">
-                    <CardContent className="p-0">
-                      <div className="relative aspect-video overflow-hidden rounded-t-lg">
-                        <img 
-                          src={course.thumbnailUrl} 
-                          alt={course.title} 
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                return (
+                  <Card key={course._id} className="hover:shadow-xl transition-shadow duration-300">
+                    <CardHeader>
+                      <CardTitle className="text-lg text-indigo-700">{course.title}</CardTitle>
+                      <CardDescription className="text-sm">
+                        Progress: {course.completionRate.toFixed(0)}% Complete
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-gray-600 line-clamp-2 mb-4">{course.description}</p>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                        <div
+                          className="bg-green-500 h-2.5 rounded-full"
+                          style={{ width: `${course.completionRate}%` }}
                         />
-                        {course.completionRate !== undefined && course.completionRate > 0 && (
-                          <div className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded-full">
-                            {course.completionRate}%
-                          </div>
-                        )}
                       </div>
-                      <div className="p-4">
-                        <h3 className="text-lg font-semibold text-card-foreground line-clamp-2 mb-2 h-14 group-hover:text-primary transition-colors">
-                          {course.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {t('by')} {course.instructor}
-                        </p>
-                        
-                        {/* Progress Bar */}
-                        {course.completionRate !== undefined && course.completionRate > 0 && (
-                          <div className="mb-3">
-                            <div className="w-full bg-muted rounded-full h-2">
-                              <div 
-                                className="bg-primary h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${course.completionRate}%` }}
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="flex items-center justify-end">
-                          <Link to={`/learn/${course._id}`}>
-                            <Button variant="ghost" size="sm" className="text-primary hover:bg-primary/10">
-                              {course.completionRate === 0 ? t('startLearning') : t('continueLearning')} 
-                              <ChevronRight className="w-4 h-4 ml-1" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
+                      <Link to={coursePath}>
+                        <Button variant="default" className="w-full bg-green-500 hover:bg-green-600">
+                          Continue Learning
+                          <ChevronRight className="w-4 h-4 ml-2" />
+                        </Button>
+                      </Link>
                     </CardContent>
                   </Card>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
 
-            {/* Pagination */}
             {totalPages > 1 && (
-              <div className="mt-8 flex items-center justify-center gap-2">
+              <div className="flex justify-center items-center space-x-2 mt-8">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                 >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
                   Previous
                 </Button>
-                
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                    // Show first page, last page, current page, and pages around current
-                    if (
-                      page === 1 ||
-                      page === totalPages ||
-                      (page >= currentPage - 1 && page <= currentPage + 1)
-                    ) {
+
+                <div className="flex space-x-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                    if (page === 1 || page === totalPages || (page >= currentPage - 1 && page <= currentPage + 1)) {
                       return (
                         <Button
                           key={page}

@@ -1,5 +1,6 @@
 // /backend/src/models/Course.js
 import mongoose from 'mongoose';
+import slugify from 'slugify'; // ✅ you'll need to install this
 
 const courseSchema = new mongoose.Schema({
   title: { type: String, required: true },
@@ -14,6 +15,9 @@ const courseSchema = new mongoose.Schema({
   videoUrl: { type: String, required: true },
   video_cloudinary_id: { type: String, required: true },
 
+  // ✅ ADD THIS FIELD
+  slug: { type: String, required: true, unique: true },
+
   specialOffer: {
     isActive: { type: Boolean, default: false },
     discountType: { type: String, enum: ['percentage', 'fixed'], default: 'percentage' },
@@ -21,5 +25,13 @@ const courseSchema = new mongoose.Schema({
     description: { type: String, trim: true }
   }
 }, { timestamps: true });
+
+// ✅ Automatically create a slug from the title if not provided
+courseSchema.pre('validate', function (next) {
+  if (this.title && !this.slug) {
+    this.slug = slugify(this.title, { lower: true, strict: true });
+  }
+  next();
+});
 
 export default mongoose.model('Course', courseSchema);

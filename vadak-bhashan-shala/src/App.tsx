@@ -20,6 +20,7 @@ import CoursePlayer from "./pages/CoursePlayer";
 import NotFound from "./pages/NotFound";
 // ⬇️ NEW IMPORT: Component to display a single blog article
 import BlogDetails from './pages/BlogDetails'; 
+import CourseDetails from "./pages/CourseDetails";
 
 // Admin Pages
 import AdminLayout from "./pages/AdminLayout";
@@ -68,6 +69,8 @@ const App = () => (
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/my-courses" element={<MyCourses />} />
                 <Route path="/learn/:courseId" element={<CoursePlayer />} />
+                <Route path="/course/:slug" element={<CourseDetails />} />
+                <Route path="/learn/:courseId" element={<CoursePlayer />} />
 
                 {/* --- Admin Routes --- */}
                 <Route 

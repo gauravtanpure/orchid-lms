@@ -1,20 +1,28 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { useAuth } from './AuthContext';
+// 🟢 FIX: Corrected import path using alias
+import { useAuth } from '@/contexts/AuthContext'; 
 import axios from 'axios';
 
+// --- Assumed Interfaces from your Project ---
 export interface Course {
   id: string;
+  _id: string; // Using '_id' for backend communication
   title: string;
   price: number;
   image: string;
   instructor: string;
   language: 'en' | 'mr';
+  specialOffer?: {
+    isActive: boolean;
+    discountType: 'percentage' | 'fixed';
+    discountValue: number;
+    description: string;
+  };
 }
 
 interface CartItem extends Course {
   quantity: number;
 }
-
 
 interface CartContextType {
   items: CartItem[];
@@ -23,101 +31,123 @@ interface CartContextType {
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
-  // 🟢 ADD: checkout function
-  checkout: () => Promise<void>; 
+  checkout: () => Promise<void>;
 }
+// -------------------------------------------
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
+
+// 🟢 FIX: Added fallback for VITE_REACT_APP_BACKEND_URL to resolve compilation warning
+const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:5000'; 
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
-  // 🟢 FIX: Get token and setUserData from useAuth
-  const { token, setUserData } = useAuth(); 
+  // Use localStorage to persist cart items
+  const [items, setItems] = useState<CartItem[]>(() => {
+    const storedCart = localStorage.getItem('cartItems');
+    return storedCart ? JSON.parse(storedCart) : [];
+  });
+  
+  // Get token and setUserData from useAuth
+  const { token, updateUserContext } = useAuth();
 
-  // Debug: Log cart state changes
+
+  // Persist items to localStorage whenever they change
   useEffect(() => {
-    console.log('Cart items updated:', items);
+    localStorage.setItem('cartItems', JSON.stringify(items));
   }, [items]);
 
   const addToCart = (course: Course) => {
-    console.log('CartContext.addToCart called with:', course);
-    
-    try {
-      setItems(prev => {
-        const existing = prev.find(item => item.id === course.id);
-        
-        if (existing) {
-          console.log('Course already in cart, increasing quantity');
-          return prev.map(item =>
-            item.id === course.id
-              ? { ...item, quantity: item.quantity + 1 }
-              : item
-          );
-        }
-        
-        console.log('Adding new course to cart');
-        return [...prev, { ...course, quantity: 1 }];
-      });
-      
-      console.log('Cart update successful');
-    } catch (error) {
-      console.error('Error in addToCart:', error);
-      throw error;
-    }
+    setItems(prevItems => {
+      // Find course using _id for consistency
+      const exists = prevItems.find(item => item._id === course._id); 
+      if (exists) {
+        // Increment quantity (though usually courses are added once)
+        return prevItems.map(item => 
+          item._id === course._id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      } else {
+        // Add new course with quantity 1
+        // Ensure we use the course object properties correctly
+        const newCartItem: CartItem = {
+             ...course, 
+             quantity: 1, 
+             // Ensure optional fields are handled if needed, though spreading handles most cases
+        };
+        return [...prevItems, newCartItem];
+      }
+    });
   };
 
   const removeFromCart = (courseId: string) => {
-    console.log('Removing course from cart:', courseId);
-    setItems(prev => prev.filter(item => item.id !== courseId));
+    // Remove based on courseId (_id)
+    setItems(prevItems => prevItems.filter(item => item._id !== courseId));
   };
 
   const clearCart = () => {
-    console.log('Clearing cart');
     setItems([]);
   };
 
-  const checkout = async () => {
-    if (!token) {
-        throw new Error('Authentication token is missing. Please log in.');
-    }
-    if (items.length === 0) {
-        console.log('Cart is empty. Nothing to checkout.');
-        return;
-    }
+const checkout = async () => {
+  if (!token) {
+    throw new Error('Authentication token is missing. Please log in.');
+  }
+  if (items.length === 0) {
+    throw new Error('Cart is empty. Add courses to proceed.');
+  }
 
-    // Use course.id which maps to MongoDB _id on the backend
-    const courseIds = items.map(item => item.id);
+  const courseIds = items
+  .map(item => item._id || item.id) // ✅ Use _id first, fallback to id
+  .filter(id => id && id !== 'undefined' && id !== null); // ✅ Filter invalid values
 
-    try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        // This hits the POST /api/users/enroll endpoint in userRoutes.js
-        const response = await axios.post(`${API_URL}/api/users/enroll`, { courseIds }, config);
+console.log("🟢 Enrolling with courseIds:", courseIds);
 
-        const { user: updatedUser } = response.data;
-        
-        // 🟢 CRITICAL FIX: Update the user state in AuthContext with the new enrolled courses
-        // This syncs the frontend state immediately after a successful backend enrollment.
-        setUserData({ enrolledCourses: updatedUser.enrolledCourses }); 
-        
-        clearCart(); // Clear the cart on successful enrollment
-        console.log('Checkout successful. User enrolled and cart cleared.');
-    } catch (error) {
-        console.error('Checkout failed:', error);
-        throw new Error(error.response?.data?.message || 'Enrollment failed.');
-    }
-  };
+if (courseIds.length === 0) {
+  throw new Error('No valid course IDs found in cart.');
+}
+
+  try {
+    const config = {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    };
+
+    const response = await axios.post(`${API_URL}/api/users/enroll`, { courseIds }, config);
+    const { user: updatedUser } = response.data;
+
+    // ✅ FIXED: Use updateUserContext instead of setUserData
+    updateUserContext(updatedUser);
+    clearCart();
+
+    // 🔁 Notify MyCourses to refresh data
+    window.dispatchEvent(new Event('courses-updated'));
+
+    console.log('Checkout successful. User enrolled and cart cleared.');
+  } catch (error: any) {
+    console.error('Checkout failed:', error.response || error);
+    throw new Error(error.response?.data?.message || 'Enrollment failed: Please try logging in again.');
+  }
+};
+
 
   const getTotalItems = () => {
-    const total = items.reduce((total, item) => total + item.quantity, 0);
-    console.log('Total items:', total);
-    return total;
+    return items.reduce((total, item) => total + item.quantity, 0);
   };
 
   const getTotalPrice = () => {
-    const total = items.reduce((total, item) => total + (item.price * item.quantity), 0);
-    console.log('Total price:', total);
-    return total;
+    // Calculate total price including discounts if available
+    return items.reduce((total, item) => {
+        let price = item.price;
+        if (item.specialOffer?.isActive && item.specialOffer.discountValue > 0) {
+             const { discountType, discountValue } = item.specialOffer;
+             if (discountType === 'percentage') {
+                price -= price * (discountValue / 100);
+             } else {
+                price -= discountValue;
+             }
+        }
+        return total + Math.max(0, price) * item.quantity;
+    }, 0);
   };
 
   return (
