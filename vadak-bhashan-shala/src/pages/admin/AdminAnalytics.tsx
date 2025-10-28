@@ -1,20 +1,75 @@
-import React, { useState, useEffect } from 'react'; 
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, DollarSign, Activity, TrendingUp, Waypoints } from 'lucide-react';
-import { 
-  mockAdminCourses, 
-  mockAdminAnalytics, 
-  mockInstructorPerformance,
-  mockEnrollmentTrend, 
-  mockCategoryRevenue 
-} from '@/data/adminMockData';
+import { Users, DollarSign, Activity, TrendingUp } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-// Importing Recharts components
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Bar, BarChart as RechartsBarChart, AreaChart, Area, PieChart, Pie, Cell,
 } from 'recharts';
 
+// --- IMPORT FIX: Use relative path for API utility ---
+import { 
+  fetchAdminAnalyticsData, 
+  AdminAnalyticsData, 
+  Course, 
+  InstructorPerformance, 
+  EnrollmentTrend, 
+  CategoryRevenue,
+  RevenueTrend
+} from '../../api/adminApi'; 
+
+
+// --- Types for fetched data state ---
+interface AnalyticsState {
+  analytics: AdminAnalyticsData | null;
+  topCourses: Course[];
+  revenueTrendData: RevenueTrend[];
+  instructorData: InstructorPerformance[];
+  enrollmentTrendData: EnrollmentTrend[];
+  categoryRevenueData: CategoryRevenue[];
+  loading: boolean;
+  error: string | null;
+}
+
+const initialAnalyticsState: AnalyticsState = {
+  analytics: null,
+  topCourses: [],
+  revenueTrendData: [],
+  instructorData: [],
+  enrollmentTrendData: [],
+  categoryRevenueData: [],
+  loading: true,
+  error: null,
+};
+
+// --- Custom Hook to Fetch Data ---
+const useAdminAnalyticsData = () => {
+  const [dataState, setDataState] = useState<AnalyticsState>(initialAnalyticsState);
+
+  useEffect(() => {
+    const getData = async () => {
+      try {
+        const fetchedData = await fetchAdminAnalyticsData();
+        setDataState({
+          ...fetchedData,
+          analytics: fetchedData.analytics,
+          loading: false,
+          error: null,
+        });
+      } catch (err) {
+        console.error('Failed to fetch analytics data:', err);
+        setDataState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: 'Failed to load analytics data.' 
+        }));
+      }
+    };
+    getData();
+  }, []);
+
+  return dataState;
+};
 
 // --- Custom Hook to fix Recharts rendering issue ---
 const useIsClient = () => {
@@ -26,36 +81,18 @@ const useIsClient = () => {
 };
 
 
-// --- Data Preparation ---
-const analytics = mockAdminAnalytics;
-const topCourses = mockAdminCourses
-  .sort((a, b) => b.enrollments - a.enrollments)
-  .slice(0, 5);
-
-const revenueTrendData = [
-  { month: 'Jan', revenue: 400000 },
-  { month: 'Feb', revenue: 300000 },
-  { month: 'Mar', revenue: 550000 },
-  { month: 'Apr', revenue: 450000 },
-  { month: 'May', revenue: 600000 },
-  { month: 'Jun', revenue: 750000 },
-];
-const instructorData = mockInstructorPerformance;
-const enrollmentTrendData = mockEnrollmentTrend;
-const categoryRevenueData = mockCategoryRevenue;
-
 // Light, Formal Color Palette for Pie Chart (Corporate Theme)
 const PIE_COLORS = ['#0EA5E9', '#F59E0B', '#14B8A6']; 
 
 
 // --- Chart Components ---
-const RevenueChart = () => (
+const RevenueChart = ({ data }: { data: RevenueTrend[] }) => (
   <ResponsiveContainer width="100%" height="100%">
-    <LineChart data={revenueTrendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+    <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
       <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
       <XAxis dataKey="month" stroke="#333" />
       <YAxis
-        tickFormatter={(value) => `₹${(value / 100000).toFixed(1)}L`}
+        tickFormatter={(value) => `₹${(Number(value) / 100000).toFixed(1)}L`}
         stroke="#333"
       />
       <Tooltip
@@ -64,50 +101,46 @@ const RevenueChart = () => (
         contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
       />
       <Legend wrapperStyle={{ paddingTop: '10px' }} />
-      {/* Light Color: Sky-500 */}
       <Line type="monotone" dataKey="revenue" stroke="#0EA5E9" strokeWidth={3} activeDot={{ r: 8 }} />
     </LineChart>
   </ResponsiveContainer>
 );
 
-const InstructorChart = () => (
+const InstructorChart = ({ data }: { data: InstructorPerformance[] }) => (
   <ResponsiveContainer width="100%" height="100%">
-    <RechartsBarChart data={instructorData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+    <RechartsBarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
       <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" vertical={false} />
       <XAxis dataKey="instructor" stroke="#333" />
       <YAxis stroke="#333" />
       <Tooltip
-        formatter={(value: number) => [value, 'Total Enrollments']}
+        formatter={(value: number) => [value.toLocaleString(), 'Total Enrollments']}
         contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
       />
       <Legend wrapperStyle={{ paddingTop: '10px' }} />
-      {/* Light Color: Blue-500 */}
       <Bar dataKey="enrollments" fill="#3B82F6" radius={[4, 4, 0, 0]} />
     </RechartsBarChart>
   </ResponsiveContainer>
 );
 
-const ConversionChart = () => (
+const ConversionChart = ({ data }: { data: EnrollmentTrend[] }) => (
   <ResponsiveContainer width="100%" height="100%">
-    <AreaChart data={enrollmentTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+    <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
       <CartesianGrid strokeDasharray="3 3" />
       <XAxis dataKey="month" />
       <YAxis />
       <Tooltip />
-      {/* Light Color: Teal line, very light Teal fill */}
       <Area type="monotone" dataKey="registrations" stackId="1" stroke="#14B8A6" fill="#E0F2F1" name="New Registrations" />
-      {/* Light Color: Sky line, very light Sky fill */}
       <Area type="monotone" dataKey="enrollments" stackId="1" stroke="#0EA5E9" fill="#E0F7FA" name="Course Enrollments" />
       <Legend wrapperStyle={{ paddingTop: '10px' }} />
     </AreaChart>
   </ResponsiveContainer>
 );
 
-const CategoryPieChart = () => (
+const CategoryPieChart = ({ data }: { data: CategoryRevenue[] }) => (
   <ResponsiveContainer width="100%" height="100%">
     <PieChart margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
       <Pie
-        data={categoryRevenueData}
+        data={data}
         dataKey="value"
         nameKey="name"
         cx="50%"
@@ -116,7 +149,7 @@ const CategoryPieChart = () => (
         fill="#8884d8"
         label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
       >
-        {categoryRevenueData.map((entry, index) => (
+        {data.map((entry, index) => (
           <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
         ))}
       </Pie>
@@ -126,10 +159,60 @@ const CategoryPieChart = () => (
   </ResponsiveContainer>
 );
 
+const LoadingSkeleton = () => (
+  <div className="animate-pulse space-y-8">
+    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="h-28 bg-gray-200 rounded-xl"></div>
+      ))}
+    </div>
+    <div className="grid lg:grid-cols-2 gap-6">
+      <div className="h-[380px] bg-gray-200 rounded-xl"></div>
+      <div className="h-[380px] bg-gray-200 rounded-xl"></div>
+    </div>
+  </div>
+);
+
 
 // --- Main Component ---
 const AdminAnalytics: React.FC = () => {
   const isClient = useIsClient();
+  const { 
+    analytics, 
+    topCourses, 
+    revenueTrendData, 
+    instructorData, 
+    enrollmentTrendData, 
+    categoryRevenueData, 
+    loading, 
+    error 
+  } = useAdminAnalyticsData();
+
+  if (loading) {
+    return <div className="p-4 md:p-8 space-y-8"><LoadingSkeleton /></div>;
+  }
+
+  if (error || !analytics) {
+    return <div className="p-4 md:p-8 text-center text-red-600 border border-red-200 bg-red-50 rounded-lg">Error: {error || 'Analytics data is missing.'}</div>;
+  }
+
+  const RenderChart = ({ chartComponent: Chart, data, title }: { chartComponent: React.FC<any>, data: any, title: string }) => (
+    <Card className="lg:col-span-1 shadow-2xl">
+      <CardHeader>
+        <CardTitle className="text-xl font-bold">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="h-[300px] p-6">
+        {isClient && data.length > 0 ? (
+          <Chart data={data} />
+        ) : (
+          <div className="flex h-full items-center justify-center text-muted-foreground">
+            {isClient ? 'No data available for this chart.' : 'Loading chart...'}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+
 
   return (
     <div className="p-4 md:p-8 space-y-8">
@@ -137,7 +220,7 @@ const AdminAnalytics: React.FC = () => {
         📊 Platform Dashboard
       </h1>
 
-      {/* Metric Cards - Using Muted Corporate Colors */}
+      {/* Metric Cards - Using Fetched Data */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {/* Total Revenue Card (Muted Success) */}
         <Card className="shadow-lg border-l-4 border-emerald-400 hover:shadow-xl transition-all duration-300">
@@ -200,44 +283,32 @@ const AdminAnalytics: React.FC = () => {
 
       {/* Primary Charts (Section 2) */}
       <div className="mt-8 grid lg:grid-cols-2 gap-6">
-        <Card className="lg:col-span-1 shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">💰 Revenue Trend (Last 6 Months)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] p-6">
-            {isClient ? (<RevenueChart />) : (<div className="flex h-full items-center justify-center text-muted-foreground">Loading chart...</div>)}
-          </CardContent>
-        </Card>
+        <RenderChart
+          chartComponent={RevenueChart}
+          data={revenueTrendData}
+          title="💰 Revenue Trend (Last 6 Months)"
+        />
 
-        <Card className="lg:col-span-1 shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">⭐ Top Instructor Performance (Enrollments)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] p-6">
-            {isClient ? (<InstructorChart />) : (<div className="flex h-full items-center justify-center text-muted-foreground">Loading chart...</div>)}
-          </CardContent>
-        </Card>
+        <RenderChart
+          chartComponent={InstructorChart}
+          data={instructorData}
+          title="⭐ Top Instructor Performance (Enrollments)"
+        />
       </div>
       
       {/* Informative Charts (Section 3) */}
       <div className="mt-8 grid lg:grid-cols-2 gap-6">
-        <Card className="lg:col-span-1 shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">🎯 User Conversion Funnel (Reg. vs. Enroll)</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] p-6">
-            {isClient ? (<ConversionChart />) : (<div className="flex h-full items-center justify-center text-muted-foreground">Loading chart...</div>)}
-          </CardContent>
-        </Card>
+        <RenderChart
+          chartComponent={ConversionChart}
+          data={enrollmentTrendData}
+          title="🎯 User Conversion Funnel (Reg. vs. Enroll)"
+        />
 
-        <Card className="lg:col-span-1 shadow-2xl">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">🏷️ Revenue Breakdown by Category</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[300px] p-6">
-            {isClient ? (<CategoryPieChart />) : (<div className="flex h-full items-center justify-center text-muted-foreground">Loading chart...</div>)}
-          </CardContent>
-        </Card>
+        <RenderChart
+          chartComponent={CategoryPieChart}
+          data={categoryRevenueData}
+          title="🏷️ Revenue Breakdown by Category"
+        />
       </div>
 
 
@@ -262,7 +333,6 @@ const AdminAnalytics: React.FC = () => {
                     <TableCell className="text-gray-600">{course.instructor}</TableCell>
                     <TableCell className="font-medium">{course.enrollments.toLocaleString()}</TableCell>
                     <TableCell className="text-right flex flex-col items-end">
-                      {/* Using muted blue for progress bar */}
                       <Progress value={course.completionRate || 0} className="h-2 w-3/4 mb-1 bg-gray-200" indicatorClassName="bg-sky-500" />
                       <span className="text-xs font-medium text-sky-600 mt-0.5">
                         {course.completionRate || 0}%

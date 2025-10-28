@@ -31,7 +31,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes); // This correctly connects all routes from adminRoutes.js
 app.use('/api/blogs', blogRoutes);
 
 app.get('/', (req, res) => {

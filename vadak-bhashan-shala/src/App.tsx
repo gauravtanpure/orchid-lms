@@ -65,9 +65,9 @@ const App = () => (
                 <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
                 <Route path="/signup" element={<PublicRoute><SignUp /></PublicRoute>} />
 
-                {/* --- Logged-in User Routes --- */}
-                <Route path="/cart" element={<Cart />} />
-                <Route path="/my-courses" element={<MyCourses />} />
+              <Route path="/cart" element={<Cart />} />
+                          {/* --- Logged-in User Routes --- */}
+        <Route path="/my-courses" element={<MyCourses />} />
                 <Route path="/learn/:courseId" element={<CoursePlayer />} />
                 <Route path="/course/:slug" element={<CourseDetails />} />
                 <Route path="/learn/:courseId" element={<CoursePlayer />} />
