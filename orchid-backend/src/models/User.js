@@ -8,7 +8,16 @@ const UserSchema = new mongoose.Schema({
   },
   email: {
     type: String,
+    // Email is now OPTIONAL, but if provided, it must be unique.
+    unique: true,
+    // sparse: true is crucial for unique index when some documents might not have this field (e.g., they only registered with a phone number)
+    sparse: true, 
+  },
+  phone: {
+    type: String,
+    // 🚨 MODIFIED: Phone number is now REQUIRED
     required: true,
+    // Phone number must be unique
     unique: true,
   },
   password: {

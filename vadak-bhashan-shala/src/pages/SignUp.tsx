@@ -19,6 +19,8 @@ const SignUp: React.FC = () => {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  // State for phone number
+  const [phone, setPhone] = useState(''); 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,9 +28,25 @@ const SignUp: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
+    // 🚨 MODIFIED: We no longer need to check if EITHER is present, as phone is required via the 'required' attribute on the input and backend validation.
+    // If the phone state is empty and the input has the 'required' attribute, the form won't submit here anyway, 
+    // but a final check is harmless:
+    if (!phone) {
+        setIsLoading(false);
+        return toast({
+            title: t('registrationFailed'),
+            description: "Please provide a phone number.",
+            variant: "destructive",
+        });
+    }
     
+    // Prepare email for submission: use undefined if empty string, which is better for Mongoose sparse index.
+    const emailToSubmit = email.trim() === '' ? undefined : email.trim();
+
     try {
-      await register(name, email, password); 
+      // 🚨 MODIFIED: Pass emailToSubmit (optional) and phone (required)
+      await register(name, emailToSubmit, phone, password); 
       
       toast({
         title: t('registrationSuccessful'),
@@ -38,7 +56,14 @@ const SignUp: React.FC = () => {
       navigate('/login'); 
 
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : t('anUnexpectedErrorOccurred');
+      // Improved error handling to extract message from Axios response if available
+      let errorMessage = t('anUnexpectedErrorOccurred');
+      if (error && error.response && error.response.data && error.response.data.msg) {
+        errorMessage = error.response.data.msg;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       console.error('Registration failed:', errorMessage);
       toast({
         title: t('registrationFailed'),
@@ -87,14 +112,29 @@ const SignUp: React.FC = () => {
 
               {/* Email Input */}
               <div className="space-y-2">
-                <Label htmlFor="email">{t('email')}</Label>
+                {/* 🚨 MODIFIED Label */}
+                <Label htmlFor="email">{t('email')} ({t('optional')})</Label> 
                 <Input
                   id="email"
                   type="email"
                   placeholder={t('emailPlaceholder')}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  required
+                  // 🚨 MODIFIED: Ensure 'required' is NOT set
+                />
+              </div>
+
+              {/* 🚨 NEW: Phone Number Input */}
+              <div className="space-y-2">
+                {/* 🚨 MODIFIED Label */}
+                <Label htmlFor="phone">{t('phone_number')} ({t('required')})</Label> 
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder={t('phonePlaceholder')} 
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required // 🚨 MODIFIED: Phone is now REQUIRED
                 />
               </div>
               
@@ -108,7 +148,7 @@ const SignUp: React.FC = () => {
                     placeholder={t('passwordPlaceholder')}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
+                    required 
                   />
                   <Button
                     type="button"
@@ -126,11 +166,11 @@ const SignUp: React.FC = () => {
                 </div>
               </div>
 
-              {/* NEW: Button Layout side-by-side */}
+              {/* Button Layout side-by-side */}
               <div className="flex space-x-4 pt-2">
                 <Button
                   type="button"
-                  variant="outline" // Use outline variant for back button
+                  variant="outline" 
                   onClick={handleBack}
                   className="w-1/2"
                 >

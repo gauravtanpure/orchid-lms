@@ -1,3 +1,4 @@
+// /frontend/src/contexts/AuthContext.tsx
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import axios from 'axios';
 // Removed unused Navigate import
@@ -11,7 +12,10 @@ interface Enrollment {
 interface User {
 	id: string;
 	name: string;
-	email: string;
+	// 🚨 MODIFIED: Email is now optional in the User interface
+	email?: string; 
+	// 🚨 MODIFIED: Phone is now explicitly defined
+	phone: string; 
 	role: 'user' | 'admin';
 	enrolledCourses?: Enrollment[]; // This array holds the course IDs and completion rates
 }
@@ -21,11 +25,12 @@ interface AuthContextType {
 	isLoggedIn: boolean;
 	isLoading: boolean;
 	token: string | null;
-	login: (email: string, password: string) => Promise<User>;
-	register: (name: string, email: string, password: string) => Promise<void>;
+	// 🚨 MODIFIED: login now accepts a single 'identifier' (email or phone)
+	login: (identifier: string, password: string) => Promise<User>;
+	// 🚨 MODIFIED: register now takes a required phone (TypeScript doesn't know about the backend requirement so we make email optional here)
+	register: (name: string, email: string | undefined, phone: string, password: string) => Promise<void>;
 	logout: () => void;
 	isEnrolled: (courseId: string) => boolean;
-	// 💡 NEW: Function to manually update user data after actions like enrollment
 	updateUserContext: (updatedUser: User) => void;
 }
 
@@ -47,18 +52,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		setToken(null);
 	};
 
-	// 💡 NEW HELPER FUNCTION: To update context and local storage immediately
 	const updateUserContext = (updatedUser: User) => {
-		// Ensure the token is preserved, as the backend usually doesn't return it in non-auth routes
 		const currentToken = localStorage.getItem('token');
-
-		// Save the new user data to local storage
 		localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
-
-		// Update the React state
 		setUser(updatedUser);
-
-		// Safety check for token in case the original call somehow cleared it
 		if (currentToken && !token) {
 			setToken(currentToken);
 			localStorage.setItem('token', currentToken);
@@ -67,17 +64,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
 	// ----------------------------------------------------------------------
-	// 🟢 FIX 1: Axios Request Interceptor
-	// CRITICAL: This ensures the Authorization header is sent with every API call.
+	// Axios Request Interceptor
 	// ----------------------------------------------------------------------
 	useEffect(() => {
 		const requestInterceptor = axios.interceptors.request.use(
 			(config) => {
-				// Attach the token only if it exists
 				if (token) {
 					config.headers.Authorization = `Bearer ${token}`;
 				} else {
-					// Clear header if token is missing
 					delete config.headers.Authorization;
 				}
 				return config;
@@ -87,15 +81,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 			}
 		);
 
-		// Cleanup function to remove the interceptor when component unmounts or token changes
 		return () => {
 			axios.interceptors.request.eject(requestInterceptor);
 		};
-	}, [token]); // Dependency on token ensures the header is updated/set/cleared
+	}, [token]); 
 
 	// ----------------------------------------------------------------------
-	// 🟢 FIX 2: Axios Response Interceptor (Moved to its own useEffect)
-	// Handles expired tokens globally
+	// Axios Response Interceptor
 	// ----------------------------------------------------------------------
 	useEffect(() => {
 		const responseInterceptor = axios.interceptors.response.use(
@@ -115,7 +107,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		return () => {
 			axios.interceptors.response.eject(responseInterceptor);
 		};
-	}, []); // Empty dependency array: runs only once on mount
+	}, []); 
 
 	// Load user + token from localStorage on mount
 	useEffect(() => {
@@ -124,9 +116,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 			const storedToken = localStorage.getItem('token');
 
 			if (storedUser && storedToken) {
-				// Fix: Ensure the user object being parsed is correct
 				const parsedUser = JSON.parse(storedUser);
-				// Ensure the ID is available, using 'id' for React state and potentially '_id' for database
 				if (!parsedUser.id && parsedUser._id) {
 					parsedUser.id = parsedUser._id;
 				}
@@ -144,10 +134,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		}
 	}, []);
 
-	// Removed unused setUserData as it's less direct than updateUserContext
-
-	const login = async (email: string, password: string): Promise<User> => {
-		const response = await axios.post(`${backendUrl}/api/auth/login`, { email, password });
+	// 🚨 MODIFIED: Login function (correctly uses identifier)
+	const login = async (identifier: string, password: string): Promise<User> => {
+		// Send the identifier field instead of email
+		const response = await axios.post(`${backendUrl}/api/auth/login`, { identifier, password });
 		const { user: backendUser, token: newToken } = response.data;
 
 		// Ensure 'id' is used for frontend consistency
@@ -162,8 +152,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		return backendUser;
 	};
 
-	const register = async (name: string, email: string, password: string) => {
-		const response = await axios.post(`${backendUrl}/api/auth/register`, { name, email, password });
+	// 🚨 MODIFIED: Register function now explicitly passes phone (which is required by backend)
+	const register = async (name: string, email: string | undefined, phone: string, password: string) => {
+		// Send phone along with other details
+		const response = await axios.post(`${backendUrl}/api/auth/register`, { name, email, phone, password });
 		const { user: backendUser, token: newToken } = response.data;
 
 		if (!backendUser.id && backendUser._id) {
@@ -177,7 +169,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 	};
 
 	const isEnrolled = (courseId: string) => {
-		// Check if the current user state contains the enrollment
 		return user?.enrolledCourses?.some(e => e.courseId === courseId) || false;
 	};
 
@@ -192,7 +183,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 				register,
 				logout,
 				isEnrolled,
-				updateUserContext, // 💡 EXPOSE THE NEW UPDATE FUNCTION
+				updateUserContext, 
 			}}
 		>
 			{children}

@@ -11,11 +11,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const Login: React.FC = () => {
-  const { login } = useAuth(); // No need to destructure 'user' here
+  const { login } = useAuth(); 
   const { t } = useLanguage();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  // 🚨 MODIFIED: Use 'identifier' to capture either email or phone number
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,22 +26,30 @@ const Login: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const loggedInUser = await login(email, password); // Capture the returned user object
+      // 🚨 MODIFIED: Pass 'identifier' to the login function in AuthContext
+      const loggedInUser = await login(identifier, password); 
 
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
 
-      // Redirect based on the role of the user object returned by the login function
+      // Redirect based on the role of the user object returned
       if (loggedInUser.role === 'admin') {
         navigate('/admin');
       } else {
         navigate('/');
       }
 
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred.";
+    } catch (error: any) {
+      // Improved error handling to extract message from Axios response if available
+      let errorMessage = "An unexpected error occurred.";
+      if (error && error.response && error.response.data && error.response.data.msg) {
+        errorMessage = error.response.data.msg;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       console.error('Login failed:', errorMessage);
       toast({
         title: "Login Failed",
@@ -70,20 +79,26 @@ const Login: React.FC = () => {
         <Card className="shadow-xl">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-heading">{t('login')}</CardTitle>
-            <CardDescription>{t('loginDescription')}</CardDescription>
+            {/* 🚨 MODIFIED: Description updated for dual login */}
+            <CardDescription>
+                {t('loginDescription') || "Enter your phone number or email and password to access your account."}
+            </CardDescription>
           </CardHeader>
           <CardContent>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Email Input */}
+              {/* Identifier Input (Email or Phone) */}
               <div className="space-y-2">
-                <Label htmlFor="email">{t('email')}</Label>
+                {/* 🚨 MODIFIED Label and Input details */}
+                <Label htmlFor="identifier">
+                    {t('emailOrPhone') || "Email or Phone Number"}
+                </Label> 
                 <Input
-                  id="email"
-                  type="email"
-                  placeholder={t('emailPlaceholder')}
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  id="identifier"
+                  type="text" // Use text to accept both email and phone number formats
+                  placeholder={t('identifierPlaceholder') || "Enter your email or phone number"}
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
                 />
               </div>
