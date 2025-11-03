@@ -38,7 +38,7 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // 🟢 FIX: Added fallback for VITE_REACT_APP_BACKEND_URL to resolve compilation warning
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:5000'; 
+const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:1337'; 
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   // Use localStorage to persist cart items

@@ -17,12 +17,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 // API functions
 const fetchCourses = async (): Promise<Course[]> => {
-  const { data } = await axios.get('http://localhost:5000/api/courses');
+  const { data } = await axios.get('http://localhost:1337/api/courses');
   return data;
 };
 
 const addCourse = async (formData: FormData) => {
-  const { data } = await axios.post('http://localhost:5000/api/courses', formData, {
+  const { data } = await axios.post('http://localhost:1337/api/courses', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return data;

@@ -26,7 +26,7 @@ const fetchAllUsers = async (token: string | null): Promise<User[]> => {
         throw new Error("Authentication token not found. Please log in again.");
     }
 
-    const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:5000';
+    const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:1337';
     
     console.log('📡 Making request to:', `${backendUrl}/api/admin/users`); // DEBUG
     console.log('🔑 Authorization header:', `Bearer ${token.substring(0, 20)}...`); // DEBUG (partial token)

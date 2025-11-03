@@ -14,7 +14,7 @@ import { PlusCircle, Loader2, Edit, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from '@/components/ui/badge';
 
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:1337';
 
 interface Coupon {
   _id: string;

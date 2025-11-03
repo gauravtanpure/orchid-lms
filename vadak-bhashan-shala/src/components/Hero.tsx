@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { ArrowRight, Phone, CheckCircle, Users, Award, PlayCircle } from "lucide-react";
+import { ArrowRight, Phone, CheckCircle, Users, Award, PlayCircle, X } from "lucide-react";
 
 const STRAPI_API_URL = import.meta.env.VITE_STRAPI_API_URL;
+const BACKEND_API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
 interface HeroContent {
   title_en: string;
@@ -12,90 +13,95 @@ interface HeroContent {
   subtitle_mr: string;
 }
 
+interface ActiveBanner {
+  _id: string;
+  imageUrl: string;
+  link: string;
+  isActive: boolean;
+}
+
 // Counter animation hook
 const useCountUp = (end: number, duration: number = 2000) => {
   const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
-
   useEffect(() => {
-    if (hasAnimated) return;
-    
-    setHasAnimated(true);
     let startTime: number | null = null;
-    const animate = (currentTime: number) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      
+    const animate = (time: number) => {
+      if (!startTime) startTime = time;
+      const progress = Math.min((time - startTime) / duration, 1);
       setCount(Math.floor(progress * end));
-      
-      if (progress < 1) {
-        requestAnimationFrame(animate);
-      }
+      if (progress < 1) requestAnimationFrame(animate);
     };
-    
     requestAnimationFrame(animate);
-  }, [end, duration, hasAnimated]);
-
+  }, [end, duration]);
   return count;
 };
 
 const Hero = () => {
   const [content, setContent] = useState<HeroContent | null>(null);
+  const [banner, setBanner] = useState<ActiveBanner | null>(null);
+  const [showBanner, setShowBanner] = useState(false);
   const { language } = useLanguage();
-  const navigate = useNavigate(); // Initialize useNavigate hook
+  const navigate = useNavigate();
 
   const studentsCount = useCountUp(50000);
   const coursesCount = useCountUp(500);
   const successRate = useCountUp(98);
 
-  // Handlers for CTA buttons
-  const handleGetStarted = () => {
-    navigate('/courses'); // Navigate to the courses page
+  // ✅ Skip banner for 6 hours max
+  const SKIP_DURATION_MS = 6 * 60 * 60 * 1000;
+
+  const handleSkipBanner = () => {
+    const expiry = Date.now() + SKIP_DURATION_MS;
+    localStorage.setItem("skipBannerUntil", expiry.toString());
+    setShowBanner(false);
   };
 
-  const handleCallUs = () => {
-    navigate('/contact'); // Navigate to the contact page
-  };
-
-
+  // ✅ Fetch Hero Content (from Strapi CMS)
   useEffect(() => {
     const fetchHero = async () => {
-      if (!STRAPI_API_URL) {
-        console.error(
-          "VITE_STRAPI_API_URL is not defined. Please check your .env file."
-        );
-        return;
-      }
-
       try {
         const res = await fetch(`${STRAPI_API_URL}/api/heroes`);
-
-        if (!res.ok) {
-          throw new Error(
-            `Failed to fetch hero content: ${res.status} ${res.statusText}`
-          );
-        }
-
+        if (!res.ok) throw new Error(`Hero fetch failed: ${res.status}`);
         const data = await res.json();
-        
-        if (data.data && data.data.length > 0) {
-          const heroData = data.data[0];
-          
+
+        if (data.data?.length > 0) {
+          const hero = data.data[0];
           setContent({
-            title_en: heroData.title_en,
-            title_mr: heroData.title_mr,
-            subtitle_en: heroData.subtitle_en,
-            subtitle_mr: heroData.subtitle_mr,
+            title_en: hero.title_en,
+            title_mr: hero.title_mr,
+            subtitle_en: hero.subtitle_en,
+            subtitle_mr: hero.subtitle_mr,
           });
-        } else {
-          console.warn("No hero data found in API response.");
         }
       } catch (err) {
-        console.error("Error fetching hero content:", err);
+        console.error("❌ Error fetching hero:", err);
       }
     };
 
     fetchHero();
+  }, []);
+
+  // ✅ Fetch Active Banner (from Node backend)
+  useEffect(() => {
+    const fetchBanner = async () => {
+      try {
+        const skipUntil = localStorage.getItem("skipBannerUntil");
+        if (skipUntil && Date.now() < Number(skipUntil)) return; // still skipped
+
+        const res = await fetch(`${BACKEND_API_URL}/api/banners/active`);
+        if (!res.ok) return;
+
+        const data = await res.json();
+        if (data && data.isActive) {
+          setBanner(data);
+          setShowBanner(true);
+        }
+      } catch (err) {
+        console.warn("⚠️ No active banner or fetch error:", err);
+      }
+    };
+
+    fetchBanner();
   }, []);
 
   if (!content) {
@@ -111,124 +117,93 @@ const Hero = () => {
 
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-b from-blue-50 via-white to-slate-50">
-      {/* Simple, calm background */}
-      <div className="absolute inset-0">
-        <div className="absolute top-20 right-10 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-40"></div>
-        <div className="absolute bottom-20 left-10 w-80 h-80 bg-indigo-100 rounded-full blur-3xl opacity-40"></div>
-      </div>
+      {/* 🔹 Banner Overlay */}
+      {showBanner && banner && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-6 transition-all">
+          <div className="relative bg-white rounded-2xl shadow-2xl overflow-hidden max-w-3xl w-full">
+            <button
+              onClick={handleSkipBanner}
+              className="absolute top-3 right-3 bg-black/40 text-white rounded-full p-2 hover:bg-black/70 transition"
+              title="Skip Banner"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <a
+              href={banner.link || "/"}
+              target={banner.link.startsWith("http") ? "_blank" : "_self"}
+              rel="noopener noreferrer"
+            >
+              <img
+                src={banner.imageUrl}
+                alt="Active Banner"
+                className="w-full h-auto max-h-[80vh] object-contain"
+              />
+            </a>
+          </div>
+        </div>
+      )}
 
-      {/* Main content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 sm:px-8 lg:px-12 py-20">
-        
-
-
-        {/* Main content card - larger spacing */}
+      {/* 🔹 Main Hero Section */}
+      <div
+        className={`relative z-10 flex flex-col items-center justify-center min-h-screen px-6 sm:px-8 lg:px-12 py-20 transition-all ${
+          showBanner ? "blur-sm" : ""
+        }`}
+      >
         <div className="w-full max-w-6xl">
           <div className="text-center space-y-12">
-            
-            {/* Title - Clear and readable */}
             <div className="space-y-8">
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-slate-900">
-                {language === 'mr' ? content.title_mr : content.title_en}
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900">
+                {language === "mr" ? content.title_mr : content.title_en}
               </h1>
-              
-              {/* Simple divider */}
               <div className="flex items-center justify-center">
                 <div className="h-1 w-24 bg-blue-600 rounded-full"></div>
               </div>
-              
-              {/* Subtitle - Readable */}
-              <p className="text-xl sm:text-2xl lg:text-3xl text-slate-700 leading-relaxed max-w-4xl mx-auto font-normal">
-                {language === 'mr' ? content.subtitle_mr : content.subtitle_en}
+              <p className="text-xl sm:text-2xl lg:text-3xl text-slate-700 max-w-4xl mx-auto">
+                {language === "mr" ? content.subtitle_mr : content.subtitle_en}
               </p>
             </div>
 
-            {/* Reduced size CTA Buttons */}
+            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              {/* Reduced padding (py-7 -> py-4, px-12 -> px-8) and font size (text-2xl -> text-xl) */}
-              <button 
-                onClick={handleGetStarted} // Added click handler
-                className="group px-8 py-4 bg-blue-600 text-white text-xl font-bold rounded-xl shadow-xl transition-all duration-300 hover:bg-blue-700 hover:shadow-2xl hover:scale-105"
+              <button
+                onClick={() => navigate("/courses")}
+                className="px-8 py-4 bg-blue-600 text-white text-xl font-bold rounded-xl shadow-xl hover:bg-blue-700 hover:scale-105 transition"
               >
-                <span className="flex items-center gap-2">
-                  Get Started
-                  <ArrowRight className="w-6 h-6" /> {/* Reduced icon size */}
-                </span>
+                Get Started <ArrowRight className="inline w-6 h-6 ml-2" />
               </button>
-              
-              {/* Reduced padding (py-7 -> py-4, px-12 -> px-8) and font size (text-2xl -> text-xl) */}
-              <button 
-                onClick={handleCallUs} // Added click handler
-                className="group px-8 py-4 bg-white border-2 border-blue-600 text-blue-600 text-xl font-bold rounded-xl shadow-xl transition-all duration-300 hover:bg-blue-50 hover:shadow-2xl hover:scale-105"
+              <button
+                onClick={() => navigate("/contact")}
+                className="px-8 py-4 bg-white border-2 border-blue-600 text-blue-600 text-xl font-bold rounded-xl shadow-xl hover:bg-blue-50 hover:scale-105 transition"
               >
-                <span className="flex items-center gap-2">
-                  <Phone className="w-6 h-6" /> {/* Reduced icon size */}
-                  Call Us
-                </span>
+                <Phone className="inline w-6 h-6 mr-2" />
+                Call Us
               </button>
             </div>
 
-            {/* Simple, clear stats with counter animation - Reduced size */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8"> {/* Reduced gap and pt */}
+            {/* Stats Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto pt-8">
               {[
-                { icon: Users, value: studentsCount, suffix: "+", label: "Happy Students", color: "bg-blue-600" },
-                { icon: Award, value: coursesCount, suffix: "+", label: "Expert Teachers", color: "bg-green-600" },
-                { icon: CheckCircle, value: successRate, suffix: "%", label: "Success Rate", color: "bg-purple-600" }
-              ].map((stat, index) => (
-                <div 
-                  key={index}
-                  // Reduced padding (p-10 -> p-6) and increased border-radius (rounded-3xl -> rounded-2xl)
-                  className="p-6 bg-white border-2 border-slate-200 rounded-2xl shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105"
+                { icon: Users, value: studentsCount, suffix: "+", label: "Happy Students" },
+                { icon: Award, value: coursesCount, suffix: "+", label: "Expert Teachers" },
+                { icon: CheckCircle, value: successRate, suffix: "%", label: "Success Rate" },
+              ].map((stat, i) => (
+                <div
+                  key={i}
+                  className="p-6 bg-white border-2 border-slate-200 rounded-2xl shadow-lg hover:scale-105 transition"
                 >
-                  <div className="space-y-3"> {/* Reduced vertical space */}
-                    {/* Reduced icon padding (p-5 -> p-4) and icon size (w-10 h-10 -> w-8 h-8) */}
-                    <div className={`inline-flex p-4 ${stat.color} rounded-xl`}>
-                      <stat.icon className="w-8 h-8 text-white" />
-                    </div>
-                    {/* Reduced font size (text-5xl -> text-3xl) */}
+                  <div className="space-y-3">
                     <div className="text-3xl font-bold text-slate-900">
-                      {stat.value.toLocaleString()}{stat.suffix}
+                      {stat.value.toLocaleString()}
+                      {stat.suffix}
                     </div>
-                    {/* Reduced font size (text-xl -> text-lg) */}
-                    <div className="text-lg font-semibold text-slate-600">
-                      {stat.label}
-                    </div>
+                    <div className="text-lg text-slate-600">{stat.label}</div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Clear feature highlights with icons - minor reduction for consistency */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto pt-6">
-              {[
-                { icon: CheckCircle, text: "Easy to Learn", color: "text-green-600" },
-                { icon: PlayCircle, text: "Video Lessons", color: "text-blue-600" },
-                { icon: Phone, text: "24/7 Support", color: "text-purple-600" }
-              ].map((feature, index) => (
-                <div 
-                  key={index}
-                  // Reduced padding (p-8 -> p-6)
-                  className="flex flex-col items-center gap-3 p-6 bg-white border-2 border-slate-200 rounded-xl shadow-md transition-all duration-300 hover:shadow-xl hover:scale-105"
-                >
-                  <feature.icon className={`w-10 h-10 ${feature.color}`} /> {/* Slightly reduced icon size */}
-                  <span className="text-lg font-bold text-slate-700">{feature.text}</span> {/* Slightly reduced font size */}
                 </div>
               ))}
             </div>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        
-        .animate-spin {
-          animation: spin 1s linear infinite;
-        }
-      `}</style>
     </section>
   );
 };

@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge'; // Added Badge component
 
 
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:1337';
 
 interface Coupon {
   _id: string;

@@ -12,12 +12,10 @@ interface Enrollment {
 interface User {
 	id: string;
 	name: string;
-	// 🚨 MODIFIED: Email is now optional in the User interface
-	email?: string; 
-	// 🚨 MODIFIED: Phone is now explicitly defined
+	email?: string;
 	phone: string; 
 	role: 'user' | 'admin';
-	enrolledCourses?: Enrollment[]; // This array holds the course IDs and completion rates
+	enrolledCourses?: Enrollment[]; 
 }
 
 interface AuthContextType {
@@ -25,13 +23,16 @@ interface AuthContextType {
 	isLoggedIn: boolean;
 	isLoading: boolean;
 	token: string | null;
-	// 🚨 MODIFIED: login now accepts a single 'identifier' (email or phone)
 	login: (identifier: string, password: string) => Promise<User>;
-	// 🚨 MODIFIED: register now takes a required phone (TypeScript doesn't know about the backend requirement so we make email optional here)
+	// Changed email to be string | undefined to handle the optionality
 	register: (name: string, email: string | undefined, phone: string, password: string) => Promise<void>;
 	logout: () => void;
 	isEnrolled: (courseId: string) => boolean;
 	updateUserContext: (updatedUser: User) => void;
+    // 🚨 NEW: Password Reset Functions
+    sendPasswordResetOTP: (phone: string) => Promise<string>;
+    verifyPasswordResetOTP: (phone: string, otp: string) => Promise<{ resetToken: string, message: string }>;
+    resetUserPassword: (resetToken: string, newPassword: string, confirmNewPassword: string) => Promise<string>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -64,9 +65,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 
 	// ----------------------------------------------------------------------
-	// Axios Request Interceptor
+	// Axios Interceptors (omitted for brevity, assume they are correct)
 	// ----------------------------------------------------------------------
-	useEffect(() => {
+    useEffect(() => {
 		const requestInterceptor = axios.interceptors.request.use(
 			(config) => {
 				if (token) {
@@ -84,11 +85,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		return () => {
 			axios.interceptors.request.eject(requestInterceptor);
 		};
-	}, [token]); 
+	}, [token]);
 
-	// ----------------------------------------------------------------------
-	// Axios Response Interceptor
-	// ----------------------------------------------------------------------
 	useEffect(() => {
 		const responseInterceptor = axios.interceptors.response.use(
 			response => response,
@@ -109,7 +107,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		};
 	}, []); 
 
-	// Load user + token from localStorage on mount
 	useEffect(() => {
 		try {
 			const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
@@ -134,13 +131,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		}
 	}, []);
 
-	// 🚨 MODIFIED: Login function (correctly uses identifier)
 	const login = async (identifier: string, password: string): Promise<User> => {
-		// Send the identifier field instead of email
 		const response = await axios.post(`${backendUrl}/api/auth/login`, { identifier, password });
 		const { user: backendUser, token: newToken } = response.data;
 
-		// Ensure 'id' is used for frontend consistency
 		if (!backendUser.id && backendUser._id) {
 			backendUser.id = backendUser._id;
 		}
@@ -152,9 +146,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		return backendUser;
 	};
 
-	// 🚨 MODIFIED: Register function now explicitly passes phone (which is required by backend)
 	const register = async (name: string, email: string | undefined, phone: string, password: string) => {
-		// Send phone along with other details
 		const response = await axios.post(`${backendUrl}/api/auth/register`, { name, email, phone, password });
 		const { user: backendUser, token: newToken } = response.data;
 
@@ -167,6 +159,44 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		setUser(backendUser);
 		setToken(newToken);
 	};
+    
+    // ----------------------------------------------------------------------
+    // 🚨 NEW: Password Reset Implementations
+    // ----------------------------------------------------------------------
+
+    const sendPasswordResetOTP = async (phone: string): Promise<string> => {
+        try {
+            const response = await axios.post(`${backendUrl}/api/auth/forgot-password/send-otp`, { phone });
+            // The backend returns a simple success message
+            return response.data.msg;
+        } catch (error: any) {
+            // Throw the error message for the component to catch
+            throw new Error(error.response?.data?.msg || 'Failed to send OTP. Server error.');
+        }
+    };
+
+    const verifyPasswordResetOTP = async (phone: string, otp: string): Promise<{ resetToken: string, message: string }> => {
+        try {
+            const response = await axios.post(`${backendUrl}/api/auth/forgot-password/verify-otp`, { phone, otp });
+            // The backend returns a resetToken and a success message
+            return { resetToken: response.data.resetToken, message: response.data.msg };
+        } catch (error: any) {
+             // Throw the error message for the component to catch
+            throw new Error(error.response?.data?.msg || 'Failed to verify OTP. Server error.');
+        }
+    };
+
+    const resetUserPassword = async (resetToken: string, newPassword: string, confirmNewPassword: string): Promise<string> => {
+        try {
+            const response = await axios.post(`${backendUrl}/api/auth/forgot-password/reset-password`, { resetToken, newPassword, confirmNewPassword });
+             // The backend returns a success message
+            return response.data.msg;
+        } catch (error: any) {
+             // Throw the error message for the component to catch
+            throw new Error(error.response?.data?.msg || 'Failed to reset password. Server error.');
+        }
+    };
+
 
 	const isEnrolled = (courseId: string) => {
 		return user?.enrolledCourses?.some(e => e.courseId === courseId) || false;
@@ -183,7 +213,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 				register,
 				logout,
 				isEnrolled,
-				updateUserContext, 
+				updateUserContext,
+                sendPasswordResetOTP,
+                verifyPasswordResetOTP,
+                resetUserPassword,
 			}}
 		>
 			{children}

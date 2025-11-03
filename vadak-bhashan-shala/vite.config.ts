@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => ({
     proxy: {
       // This will forward any request starting with /api to your backend server
       '/api': {
-        target: 'http://localhost:5000', // The address of your backend server
+        target: 'http://localhost:1337', // The address of your backend server
         changeOrigin: true, // Recommended for virtual hosted sites
       },
     }

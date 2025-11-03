@@ -15,6 +15,8 @@ import {
   Settings,
   Tag,
   Newspaper,
+  // ⬇️ NEW ICON IMPORT FOR BANNERS
+  Image,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext'; // Corrected import path
 
@@ -115,6 +117,15 @@ const AdminLayout = () => {
               >
                 <Newspaper className="h-5 w-5" />
                 <span className="text-sm">Blogs</span>
+              </NavLink>
+              {/* ⬇️ NEW BANNERS LINK */}
+              <NavLink
+                to="/admin/banners"
+                className={linkClass}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <Image className="h-5 w-5" />
+                <span className="text-sm">Banners</span>
               </NavLink>
               <NavLink
                 to="/admin/coupons"

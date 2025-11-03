@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:1337';
 
 interface BlogPost {
   _id: string;
