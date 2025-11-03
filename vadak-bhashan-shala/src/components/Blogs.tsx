@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, ChevronLeft, ChevronRight, Clock, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:1337';
@@ -90,30 +90,32 @@ const Blogs: React.FC = () => {
   };
 
   return (
-    <section id="blogs" className="py-20 bg-gradient-to-b from-gray-50 to-white">
-      <div className="max-w-7xl mx-aut px-4 sm:px-6 lg:px-8">
-        {/* Enhanced Header */}
-        <div className="text-center mb-16">
-          <div className="inline-block mb-4">
-            <span className="bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-semibold">
-              {t('blog_badge') || 'Our Blog'}
+    <section id="blogs" className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Refined Header */}
+        <div className="text-center mb-20">
+          <div className="inline-flex items-center justify-center mb-6">
+            <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary/50"></div>
+            <span className="mx-4 text-primary font-semibold text-sm tracking-wider uppercase">
+              {t('blog_badge') || 'Insights & Articles'}
             </span>
+            <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary/50"></div>
           </div>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            {t('latest_blogs') || 'Latest Articles'}
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 tracking-tight">
+            {t('latest_blogs') || 'Latest Publications'}
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            {t('blog_subtitle') || 'Insights, stories, and knowledge from our team'}
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            {t('blog_subtitle') || 'Expert insights and thought leadership from our team'}
           </p>
         </div>
 
         {/* Content */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-md animate-pulse">
-                <div className="w-full h-56 bg-gray-200" />
-                <div className="p-6 space-y-4">
+              <div key={i} className="bg-white rounded-xl overflow-hidden border border-gray-200 animate-pulse">
+                <div className="w-full h-64 bg-gray-200" />
+                <div className="p-8 space-y-4">
                   <div className="h-4 bg-gray-200 rounded w-3/4" />
                   <div className="h-4 bg-gray-200 rounded w-1/2" />
                   <div className="h-20 bg-gray-200 rounded" />
@@ -122,61 +124,66 @@ const Blogs: React.FC = () => {
             ))}
           </div>
         ) : error ? (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-100 mb-4">
-              <span className="text-red-600 text-2xl">!</span>
+          <div className="text-center py-16 max-w-md mx-auto">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 border border-red-200 mb-4">
+              <span className="text-red-600 text-2xl font-semibold">!</span>
             </div>
-            <p className="text-red-600 text-lg">{error}</p>
+            <p className="text-red-600 text-lg font-medium">{error}</p>
           </div>
         ) : blogPosts.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg">No blog posts found.</p>
+          <div className="text-center py-16 max-w-md mx-auto">
+            <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg font-medium">No articles available at the moment.</p>
           </div>
         ) : (
           <>
-            {/* Blog Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {/* Centered Blog Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto mb-16">
               {currentPosts.map((post) => (
                 <article
                   key={post._id}
-                  className="group bg-white rounded-2xl shadow-md overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
+                  className="group bg-white rounded-xl border border-gray-200 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-primary/30 hover:-translate-y-1 flex flex-col"
                 >
-                  <div className="relative overflow-hidden h-56">
+                  <div className="relative overflow-hidden h-64 bg-gray-100">
                     <img
                       src={post.imageUrl}
                       alt={post.title[language as keyof typeof post.title]}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <span className="absolute top-4 left-4 bg-white text-primary text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <span className="absolute top-5 left-5 bg-white text-gray-900 text-xs font-semibold px-4 py-2 rounded-md shadow-md">
                       {post.category[language as keyof typeof post.category]}
                     </span>
                   </div>
                   
-                  <div className="p-6">
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="h-3.5 w-3.5" />
+                  <div className="p-8 flex flex-col flex-grow">
+                    <div className="flex items-center gap-4 text-xs text-gray-500 mb-4 font-medium">
+                      <span className="flex items-center gap-1.5">
+                        <Clock className="h-4 w-4" />
                         {post.readTime[language as keyof typeof post.readTime]}
                       </span>
-                      <span>{formatDate(post.createdAt)}</span>
+                      <span className="w-1 h-1 rounded-full bg-gray-300"></span>
+                      <span className="flex items-center gap-1.5">
+                        <Calendar className="h-4 w-4" />
+                        {formatDate(post.createdAt)}
+                      </span>
                     </div>
                     
-                    <h3 className="text-xl font-bold mb-3 text-gray-900 group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+                    <h3 className="text-xl font-bold mb-4 text-gray-900 line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                       {post.title[language as keyof typeof post.title]}
                     </h3>
                     
-                    <p className="text-gray-600 mb-5 line-clamp-3 text-sm leading-relaxed">
+                    <p className="text-gray-600 mb-6 line-clamp-3 text-sm leading-relaxed flex-grow">
                       {post.excerpt[language as keyof typeof post.excerpt]}
                     </p>
                     
                     <Link 
                       to={`/blog/${post._id}`}
-                      className="inline-flex items-center text-primary font-semibold text-sm group/link"
+                      className="inline-flex items-center text-primary font-semibold text-sm hover:gap-3 transition-all duration-300 group/link mt-auto"
                     >
                       <span className="relative">
-                        {t('read_more') || 'Read More'}
-                        <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover/link:w-full" />
+                        {t('read_more') || 'Read Article'}
+                        <span className="absolute bottom-0 left-0 w-full h-0.5 bg-primary scale-x-0 origin-left transition-transform duration-300 group-hover/link:scale-x-100" />
                       </span>
                       <span className="ml-2 transition-transform duration-300 group-hover/link:translate-x-1">→</span>
                     </Link>
@@ -185,52 +192,54 @@ const Blogs: React.FC = () => {
               ))}
             </div>
 
-            {/* Enhanced Pagination */}
+            {/* Professional Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2">
-                <button
-                  onClick={() => paginate(currentPage - 1)}
-                  disabled={currentPage === 1}
-                  className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
+              <div className="flex flex-col items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => paginate(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center justify-center w-11 h-11 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-700 transition-all"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
 
-                {getPageNumbers().map((page, index) => (
-                  <React.Fragment key={index}>
-                    {page === '...' ? (
-                      <span className="px-3 text-gray-400">...</span>
-                    ) : (
-                      <button
-                        onClick={() => paginate(page as number)}
-                        className={`w-10 h-10 rounded-lg font-semibold transition-all ${
-                          currentPage === page
-                            ? 'bg-primary text-white shadow-lg scale-110'
-                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    )}
-                  </React.Fragment>
-                ))}
+                  {getPageNumbers().map((page, index) => (
+                    <React.Fragment key={index}>
+                      {page === '...' ? (
+                        <span className="px-3 text-gray-400 font-medium">...</span>
+                      ) : (
+                        <button
+                          onClick={() => paginate(page as number)}
+                          className={`w-11 h-11 rounded-lg font-semibold transition-all ${
+                            currentPage === page
+                              ? 'bg-primary text-white shadow-md border-2 border-primary'
+                              : 'bg-white border-2 border-gray-300 text-gray-700 hover:border-primary hover:text-primary'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )}
+                    </React.Fragment>
+                  ))}
 
-                <button
-                  onClick={() => paginate(currentPage + 1)}
-                  disabled={currentPage === totalPages}
-                  className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
+                  <button
+                    onClick={() => paginate(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="flex items-center justify-center w-11 h-11 rounded-lg border-2 border-gray-300 bg-white text-gray-700 hover:border-primary hover:text-primary disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-700 transition-all"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Refined Results Info */}
+                <div className="text-sm text-gray-500 font-medium">
+                  Displaying {indexOfFirstPost + 1}–{Math.min(indexOfLastPost, blogPosts.length)} of {blogPosts.length} articles
+                </div>
               </div>
             )}
-
-            {/* Results Info */}
-            <div className="text-center mt-6 text-sm text-gray-600">
-              Showing {indexOfFirstPost + 1}-{Math.min(indexOfLastPost, blogPosts.length)} of {blogPosts.length} posts
-            </div>
           </>
         )}
       </div>
