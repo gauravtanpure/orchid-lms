@@ -1,229 +1,298 @@
+// /backend/src/routes/courseRoutes.js
 import express from 'express';
 const router = express.Router();
-import Course from '../models/Course.js'; // MUST ADD .js
-import upload from '../middleware/multerMiddleware.js'; // MUST ADD .js
-import cloudinary from '../config/cloudinaryConfig.js'; // MUST ADD .js
+import Course from '../models/Course.js'; 
+import upload from '../middleware/multerMiddleware.js'; 
+import cloudinary from '../config/cloudinaryConfig.js'; 
 import { Readable } from 'stream';
-// NOTE: You'll also need to import your auth middleware here for admin routes
 import { protect } from '../middleware/authMiddleware.js';
 import { adminMiddleware } from '../middleware/adminMiddleware.js';
 
 // Helper function to upload a buffer to Cloudinary
 const uploadToCloudinary = (buffer, options) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
-      if (result) {
-        resolve(result);
-      } else {
-        reject(error);
-      }
-    });
-    Readable.from(buffer).pipe(stream);
-  });
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(options, (error, result) => {
+      if (result) {
+        resolve(result);
+      } else {
+        reject(error);
+      }
+    });
+    Readable.from(buffer).pipe(stream);
+  });
 };
 
-// POST: Create a new course (Protected by admin middleware)
+
+// =================================================================
+//  ⬇️ *** THIS IS THE CORRECTED ROUTE *** ⬇️
+// =================================================================
+// --- POST: Create a new course (Metadata, Thumbnail, and MULTIPLE Videos) ---
 router.post(
-  '/',
-  protect, // Add protect
-  adminMiddleware, // Add adminMiddleware
-  upload.fields([{ name: 'thumbnail', maxCount: 1 }, { name: 'video', maxCount: 1 }]),
-  async (req, res) => {
-    try {
-      const { title, instructor, price, duration, category, specialOfferString } = req.body;
-      
-      // Parse specialOfferString back into an object
-      const specialOffer = specialOfferString ? JSON.parse(specialOfferString) : {};
+  '/',
+  protect,
+  adminMiddleware,
+  // FIX: Configure Multer to expect 'thumbnail' and an array of 'videoFiles'
+  upload.fields([
+    { name: 'thumbnail', maxCount: 1 },
+    { name: 'videoFiles' }, // <-- Accepts an array of files
+  ]),
+  async (req, res) => {
+    try {
+      const { title, instructor, price, category, description } = req.body;
+      const thumbnailFile = req.files?.thumbnail?.[0];
+      
+      // Get the array of video files and titles
+      const videoFiles = req.files?.videoFiles;
+      const videoTitles = req.body.videoTitles; // This will be an array
 
-      const thumbnailFile = req.files.thumbnail[0];
-      const videoFile = req.files.video[0];
+      if (!thumbnailFile || !videoFiles || videoFiles.length === 0) {
+        return res.status(400).json({
+          message: 'Thumbnail and at least one course video are required.',
+        });
+      }
 
-      // --- 1. Log the received string ---
-      console.log("Backend received specialOfferString:", specialOfferString);
+      // 1. Upload thumbnail
+      const thumbnailResult = await uploadToCloudinary(thumbnailFile.buffer, {
+        folder: 'course_thumbnails',
+        resource_type: 'image',
+      });
 
-      if (!thumbnailFile || !videoFile) {
-        return res.status(400).json({ message: 'Both thumbnail and video files are required.' });
-      }
+      // 2. Upload ALL videos and build the lessons array
+      const lessons = [];
+      let totalDuration = 0;
+      // Ensure titles are an array even if only one is sent
+      const titles = Array.isArray(videoTitles) ? videoTitles : [videoTitles];
 
-      // --- 2. Upload to Cloudinary ---
-      const [thumbnailResult, videoResult] = await Promise.all([
-        uploadToCloudinary(thumbnailFile.buffer, { folder: 'course_thumbnails' }),
-        uploadToCloudinary(videoFile.buffer, { 
-          resource_type: 'video', 
-          folder: 'course_videos',
-          // Optional: Add transformation for video
-          eager: [
-             { width: 400, height: 300, crop: 'pad', audio_codec: 'none' }
-          ]
-        })
-      ]);
+      for (let i = 0; i < videoFiles.length; i++) {
+        const file = videoFiles[i];
+        const title = titles[i] || `Lesson ${i + 1}`; // Fallback title
 
-      const newCourse = new Course({
-        title, 
-        instructor, 
-        price, 
-        duration, 
-        category,
-        thumbnailUrl: thumbnailResult.secure_url,
-        thumbnail_cloudinary_id: thumbnailResult.public_id,
-        videoUrl: videoResult.secure_url,
-        video_cloudinary_id: videoResult.public_id,
-        specialOffer,
-      });
+        const videoResult = await uploadToCloudinary(file.buffer, {
+          folder: 'course_videos',
+          resource_type: 'video',
+          // Request duration from Cloudinary
+          eager: [{ format: 'mp4' }],
+          eager_async: true,
+        });
 
-      // --- 3. Log the object before it's saved ---
-      console.log("Mongoose document before saving:", newCourse);
+        // Cloudinary provides duration in seconds, convert to minutes
+        const videoDurationInSeconds = videoResult.duration || 0;
+        const durationInMinutes = Math.round(videoDurationInSeconds / 60);
+        totalDuration += durationInMinutes;
 
-      await newCourse.save();
-      res.status(201).json({ message: 'Course created successfully', course: newCourse });
+        lessons.push({
+          title: title,
+          videoUrl: videoResult.secure_url,
+          video_cloudinary_id: videoResult.public_id,
+          duration: durationInMinutes,
+          order: i,
+        });
+      }
 
-    } catch (error) {
-      console.error('Error creating course:', error);
-      res.status(500).json({ message: 'Server error' });
-    }
-  }
+      // 3. Parse Special Offer (Your original logic was correct)
+      let parsedSpecialOffer = {};
+      const isActiveString = req.body['specialOffer[isActive]'];
+
+      if (isActiveString === 'true') {
+        parsedSpecialOffer = {
+          isActive: true,
+          discountType: req.body['specialOffer[discountType]'],
+          discountValue: parseFloat(req.body['specialOffer[discountValue]']) || 0,
+          description: req.body['specialOffer[description]'] || '',
+        };
+      } else {
+        parsedSpecialOffer = {
+          isActive: false,
+          discountType: 'percentage',
+          discountValue: 0,
+          description: '',
+        };
+      }
+
+      // 4. Create the course document
+      const newCourse = new Course({
+        title,
+        instructor,
+        price: parseFloat(price) || 0,
+        duration: totalDuration, // Use the new calculated total duration
+        description: description || 'A new course.',
+        category,
+        thumbnailUrl: thumbnailResult.secure_url,
+        thumbnail_cloudinary_id: thumbnailResult.public_id,
+        lessons: lessons, // Save the full array of lessons
+        specialOffer: parsedSpecialOffer,
+      });
+
+      await newCourse.save();
+      res
+        .status(201)
+        .json({ message: 'Course created successfully!', course: newCourse });
+    } catch (error) {
+      console.error('Error creating course:', error);
+      // This will now catch file filter errors or upload errors
+      const errorMessage =
+        error.message.includes('Multer') || error.message.includes('file')
+          ? error.message
+          : 'Server error';
+      res.status(500).json({ message: errorMessage, details: error.message });
+    }
+  }
+);
+// =================================================================
+//  ⬆️ *** END OF CORRECTED ROUTE *** ⬆️
+// =================================================================
+
+
+// --- NEW ROUTE: Add a lesson (video) to an existing course (remains correct) ---
+router.post(
+  '/:courseId/lesson',
+  protect,
+  adminMiddleware,
+  upload.fields([{ name: 'video', maxCount: 1 }]), 
+  async (req, res) => {
+    try {
+      const { courseId } = req.params;
+      const { lessonTitle, lessonDuration } = req.body;
+      const videoFile = req.files?.video?.[0];
+
+      if (!videoFile || !lessonTitle) {
+        return res.status(400).json({ message: 'Lesson title and video file are required.' });
+      }
+
+      // 1. Upload video to Cloudinary
+      const videoResult = await uploadToCloudinary(videoFile.buffer, {
+        folder: 'course_videos',
+        resource_type: 'video',
+      });
+      
+      const course = await Course.findById(courseId);
+
+      if (!course) {
+        // Must delete the uploaded video if the course doesn't exist
+        await cloudinary.uploader.destroy(videoResult.public_id, { resource_type: 'video' });
+        return res.status(404).json({ message: 'Course not found' });
+      }
+
+      // 2. Create new lesson object
+      const newLesson = {
+        title: lessonTitle,
+        videoUrl: videoResult.secure_url,
+        video_cloudinary_id: videoResult.public_id,
+        duration: parseInt(lessonDuration, 10) || 0,
+        order: course.lessons.length
+      };
+
+      // 3. Add lesson to the course and save
+      course.lessons.push(newLesson);
+      course.duration = course.lessons.reduce((sum, lesson) => sum + lesson.duration, 0); 
+      await course.save();
+
+      res.status(201).json({ 
+        message: 'Lesson added successfully', 
+        lesson: newLesson,
+        course: { id: course._id, title: course.title, lessonsCount: course.lessons.length } 
+      });
+
+    } catch (error) {
+      console.error('Error adding lesson:', error);
+      res.status(500).json({ message: 'Server error', details: error.message });
+    }
+  }
 );
 
-// GET: Fetch all courses
+
+// GET: Get all courses (Public)
 router.get('/', async (req, res) => {
-    try {
-        const courses = await Course.find().sort({ createdAt: -1 });
-        res.status(200).json(courses);
-    } catch (error) {
-        console.error('Error fetching courses:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
+    try {
+        const courses = await Course.find({}).select('-lessons -__v');
+        res.status(200).json(courses);
+    } catch (error) {
+        console.error('Error fetching courses:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
-// ----------------------------------------------------------------------
-// @desc    Get a single course by its SLUG (Used by CoursePlayer)
-// @route   GET /api/courses/:courseId 
-// @access  Private 
-//
-// FIX: This route handles the request from the frontend, using the slug to query.
-// It replaces the previous, less robust `router.get('/:id', async (req, res) => { ... });`
-// ----------------------------------------------------------------------
-router.get('/:courseId', protect, async (req, res) => {
-  const courseSlugOrId = req.params.courseId;
-
-  if (!courseSlugOrId) {
-    return res.status(400).json({ message: 'Course slug or ID is required.' });
-  }
-
-  try {
-    // 🔍 Try finding by slug first
-    let course = await Course.findOne({ slug: courseSlugOrId });
-
-    // 🧩 If not found and it looks like a MongoDB ObjectId, try finding by _id
-    if (!course && courseSlugOrId.match(/^[0-9a-fA-F]{24}$/)) {
-      course = await Course.findById(courseSlugOrId);
-    }
-
-    if (!course) {
-      console.log(`Course not found for slug or ID: ${courseSlugOrId}`);
-      return res.status(404).json({ message: 'Course not found.' });
-    }
-
-    // --- Enrollment Check ---
-    // --- Enrollment Check ---
-const userId = req.user.id;
-
-console.log('🟢 DEBUG Enrollment check for user:', req.user._id);
-console.log('🟢 Course _id:', course._id);
-console.log('🟢 User enrolledCourses:', req.user.enrolledCourses);
-
-const isEnrolled =
-  Array.isArray(req.user.enrolledCourses) &&
-  req.user.enrolledCourses.some((enrollment) => {
-    if (!enrollment.courseId) return false;
-    // Handle both populated and unpopulated course references
-    const enrolledId =
-      typeof enrollment.courseId === 'object' && enrollment.courseId._id
-        ? enrollment.courseId._id.toString()
-        : enrollment.courseId.toString();
-    return enrolledId === course._id.toString();
-  });
-
-if (!isEnrolled && req.user.role !== 'admin') {
-  console.log(`🔴 User ${userId} not authorized to view course ${courseSlugOrId}`);
-  return res.status(403).json({
-    message: 'Not authorized, user is not enrolled in this course.',
-  });
-}
-
-
-    // ✅ Return the course if found and authorized
-    res.status(200).json(course);
-  } catch (error) {
-    console.error('Error fetching course by slug or ID:', error);
-    res.status(500).json({ message: 'Server error while fetching course.' });
-  }
-});
-
-// ---------------------------------------------------------
-// @desc    Get a course by its slug (public)
-// @route   GET /api/courses/slug/:slug
-// @access  Public
-// ---------------------------------------------------------
-// GET /api/courses/slug/:slug  (public)
+// GET: Get course by slug (Public/Detail page - No lessons needed here)
 router.get('/slug/:slug', async (req, res) => {
-  const requestedSlug = req.params.slug;
-  try {
-    console.log(`[courses/slug] requested slug: "${requestedSlug}"`);
-    const course = await Course.findOne({ slug: requestedSlug }).lean();
-    if (!course) {
-      console.log(`[courses/slug] no course found for slug: "${requestedSlug}"`);
-      return res.status(404).json({ message: 'Course not found' });
+    try {
+        const course = await Course.findOne({ slug: req.params.slug }).select('-lessons -__v');
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+        res.status(200).json(course);
+    } catch (error) {
+        console.error('Error fetching single course by slug:', error);
+        res.status(500).json({ message: 'Server error' });
     }
-    console.log(`[courses/slug] found course _id=${course._id} title="${course.title}" slug="${course.slug}"`);
-    return res.status(200).json(course);
-  } catch (err) {
-    console.error('[courses/slug] ERROR fetching course by slug:', err);
-    return res.status(500).json({ message: 'Server error fetching course' });
-  }
+});
+
+// GET: Get course details by slug (Protected/Player page - **Includes lessons**)
+router.get('/:slug', protect, async (req, res) => {
+    try {
+        const course = await Course.findOne({ slug: req.params.slug }).select('-__v').sort({ 'lessons.order': 1 });
+        
+        if (!course) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+        
+        res.status(200).json(course);
+    } catch (error) {
+        console.error('Error fetching single course by slug for player:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // PUT: Update a course (Protected by admin middleware)
 router.put('/:id', protect, adminMiddleware, async (req, res) => {
-    try {
-        const updatedCourse = await Course.findByIdAndUpdate(
-            req.params.id, 
-            req.body, 
-            { new: true, runValidators: true }
-        );
+    try {
+        const updateData = { ...req.body };
+        delete updateData.lessons; 
 
-        if (!updatedCourse) {
-            return res.status(404).json({ message: 'Course not found' });
-        }
+        const updatedCourse = await Course.findByIdAndUpdate(
+            req.params.id, 
+            updateData, 
+            { new: true, runValidators: true }
+        );
 
-        res.status(200).json({ message: 'Course updated successfully', course: updatedCourse });
-    } catch (error) {
-        console.error('Error updating course:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
+        if (!updatedCourse) {
+            return res.status(404).json({ message: 'Course not found' });
+        }
+
+        res.status(200).json({ message: 'Course updated successfully', course: updatedCourse });
+    } catch (error) {
+        console.error('Error updating course:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // DELETE: Delete a course (Protected by admin middleware)
 router.delete('/:id', protect, adminMiddleware, async (req, res) => {
-    try {
-        const course = await Course.findById(req.params.id);
+    try {
+        
+        const courseToDelete = await Course.findById(req.params.id);
 
-        if (!course) {
-            return res.status(404).json({ message: 'Course not found' });
-        }
-        
-        // Delete files from Cloudinary
-        await cloudinary.uploader.destroy(course.thumbnail_cloudinary_id);
-        await cloudinary.uploader.destroy(course.video_cloudinary_id, { resource_type: 'video' });
+        if (!courseToDelete) {
+            return res.status(4404).json({ message: 'Course not found' });
+        }
+        
+        // Deletion of the lessons' videos should happen here
+        for (const lesson of courseToDelete.lessons) {
+            if(lesson.video_cloudinary_id) {
+                await cloudinary.uploader.destroy(lesson.video_cloudinary_id, { resource_type: 'video' });
+            }
+        }
+        if(courseToDelete.thumbnail_cloudinary_id) {
+            await cloudinary.uploader.destroy(courseToDelete.thumbnail_cloudinary_id, { resource_type: 'image' });
+        }
 
-        await course.deleteOne(); // Use deleteOne() in Mongoose 8+
-        
-        res.status(200).json({ message: 'Course deleted successfully' });
-    } catch (error) {
-        console.error('Error deleting course:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
+
+        await Course.deleteOne({ _id: req.params.id });
+
+        res.status(200).json({ message: 'Course deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting course:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
-
-export default router; // Export statement
+export default router;

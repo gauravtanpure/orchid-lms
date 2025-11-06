@@ -1,8 +1,7 @@
 // /frontend/src/contexts/AuthContext.tsx
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react'; // 1. Import useCallback
 import axios from 'axios';
-// Removed unused Navigate import
-
+// ... (Interface code is correct) ...
 interface Enrollment {
 	courseId: string;
 	completionRate: number;
@@ -34,7 +33,7 @@ interface AuthContextType {
     verifyPasswordResetOTP: (phone: string, otp: string) => Promise<{ resetToken: string, message: string }>;
     resetUserPassword: (resetToken: string, newPassword: string, confirmNewPassword: string) => Promise<string>;
 }
-
+// ... (AuthContext creation is correct) ...
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_STORAGE_KEY = 'orchid_auth_user';
@@ -46,14 +45,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
 	const backendUrl = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
-	const logout = () => {
+    // --- ⬇️ FIX 1: Wrap logout in useCallback ⬇️ ---
+	const logout = useCallback(() => {
 		localStorage.removeItem(AUTH_STORAGE_KEY);
 		localStorage.removeItem('token');
 		setUser(null);
 		setToken(null);
-	};
+	}, []); // Empty dependencies are correct here
+    // --- ⬆️ END OF FIX 1 ⬆️ ---
 
-	const updateUserContext = (updatedUser: User) => {
+    // --- ⬇️ FIX 2: Wrap updateUserContext in useCallback ⬇️ ---
+	const updateUserContext = useCallback((updatedUser: User) => {
 		const currentToken = localStorage.getItem('token');
 		localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updatedUser));
 		setUser(updatedUser);
@@ -61,7 +63,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 			setToken(currentToken);
 			localStorage.setItem('token', currentToken);
 		}
-	};
+	}, [token]); // Add token as a dependency
+    // --- ⬆️ END OF FIX 2 ⬆️ ---
 
 
 	// ----------------------------------------------------------------------
@@ -70,8 +73,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     useEffect(() => {
 		const requestInterceptor = axios.interceptors.request.use(
 			(config) => {
-				if (token) {
-					config.headers.Authorization = `Bearer ${token}`;
+				// Get token from state first, fallback to localStorage
+                // This ensures requests use the most current token
+                const currentToken = token || localStorage.getItem('token');
+				if (currentToken) {
+					config.headers.Authorization = `Bearer ${currentToken}`;
 				} else {
 					delete config.headers.Authorization;
 				}
@@ -85,7 +91,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		return () => {
 			axios.interceptors.request.eject(requestInterceptor);
 		};
-	}, [token]);
+	}, [token]); // Run this interceptor logic again if the token state changes
 
 	useEffect(() => {
 		const responseInterceptor = axios.interceptors.response.use(
@@ -105,10 +111,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		return () => {
 			axios.interceptors.response.eject(responseInterceptor);
 		};
-	}, []); 
+	}, [logout]); // --- ⬆️ FIX 3: Add logout as a dependency ⬆️ ---
 
 	useEffect(() => {
 		try {
+// ... (rest of the file is correct) ...
 			const storedUser = localStorage.getItem(AUTH_STORAGE_KEY);
 			const storedToken = localStorage.getItem('token');
 
@@ -129,7 +136,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 		} finally {
 			setIsLoading(false);
 		}
-	}, []);
+	}, [logout]); // Add logout here just in case (good practice)
 
 	const login = async (identifier: string, password: string): Promise<User> => {
 		const response = await axios.post(`${backendUrl}/api/auth/login`, { identifier, password });

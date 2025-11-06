@@ -3,15 +3,16 @@ import React, { createContext, useContext, useState, ReactNode, useEffect } from
 import { useAuth } from '@/contexts/AuthContext'; 
 import axios from 'axios';
 
-// --- Assumed Interfaces from your Project ---
+// --- Assumed Interfaces from your Project (Updated) ---\r\n
 export interface Course {
   id: string;
   _id: string; // Using '_id' for backend communication
   title: string;
   price: number;
-  image: string;
+  image: string; // The thumbnailUrl is passed here, renamed to 'image' for cart simplicity
   instructor: string;
   language: 'en' | 'mr';
+  // REMOVED: videoUrl
   specialOffer?: {
     isActive: boolean;
     discountType: 'percentage' | 'fixed';
@@ -33,53 +34,55 @@ interface CartContextType {
   getTotalPrice: () => number;
   checkout: () => Promise<void>;
 }
-// -------------------------------------------
+// -------------------------------------------\r\n
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 // 🟢 FIX: Added fallback for VITE_REACT_APP_BACKEND_URL to resolve compilation warning
-const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:1337'; 
+const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL || 'http://localhost:1337';
 
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
+};
+
+// 🟢 FIX: Added type for children
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // Use localStorage to persist cart items
   const [items, setItems] = useState<CartItem[]>(() => {
-    const storedCart = localStorage.getItem('cartItems');
-    return storedCart ? JSON.parse(storedCart) : [];
+    try {
+      const storedCart = localStorage.getItem('shoppingCart');
+      return storedCart ? JSON.parse(storedCart) : [];
+    } catch (e) {
+      console.error("Could not load cart from localStorage", e);
+      return [];
+    }
   });
+  const { user, isAuthenticated, token } = useAuth();
   
-  // Get token and setUserData from useAuth
-  const { token, updateUserContext } = useAuth();
-
-
-  // Persist items to localStorage whenever they change
+  // Save cart to localStorage whenever items change
   useEffect(() => {
-    localStorage.setItem('cartItems', JSON.stringify(items));
+    try {
+      localStorage.setItem('shoppingCart', JSON.stringify(items));
+    } catch (e) {
+      console.error("Could not save cart to localStorage", e);
+    }
   }, [items]);
 
   const addToCart = (course: Course) => {
     setItems(prevItems => {
-      // Find course using _id for consistency
-      const exists = prevItems.find(item => item._id === course._id); 
-      if (exists) {
-        // Increment quantity (though usually courses are added once)
-        return prevItems.map(item => 
-          item._id === course._id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        // Add new course with quantity 1
-        // Ensure we use the course object properties correctly
-        const newCartItem: CartItem = {
-             ...course, 
-             quantity: 1, 
-             // Ensure optional fields are handled if needed, though spreading handles most cases
-        };
-        return [...prevItems, newCartItem];
+      const existingItem = prevItems.find(item => item._id === course._id);
+      if (existingItem) {
+        // Since courses are unique in cart, we just return the existing array
+        return prevItems; 
       }
+      return [...prevItems, { ...course, quantity: 1 }];
     });
   };
 
   const removeFromCart = (courseId: string) => {
-    // Remove based on courseId (_id)
     setItems(prevItems => prevItems.filter(item => item._id !== courseId));
   };
 
@@ -87,51 +90,37 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setItems([]);
   };
 
-const checkout = async () => {
-  if (!token) {
-    throw new Error('Authentication token is missing. Please log in.');
-  }
-  if (items.length === 0) {
-    throw new Error('Cart is empty. Add courses to proceed.');
-  }
+  const checkout = async () => {
+    if (!isAuthenticated || !token) {
+      throw new Error('User must be logged in to checkout.');
+    }
+    
+    // The simplified API needs course IDs
+    const courseIds = items.map(item => item._id);
 
-  const courseIds = items
-  .map(item => item._id || item.id) // ✅ Use _id first, fallback to id
-  .filter(id => id && id !== 'undefined' && id !== null); // ✅ Filter invalid values
+    try {
+      // Assuming your backend has an /api/enrollment endpoint
+      await axios.post(`${API_URL}/api/enrollment`, 
+        { courseIds }, 
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-console.log("🟢 Enrolling with courseIds:", courseIds);
+      clearCart();
+      
+      // OPTIONAL: Dispatch a custom event to notify other components (like CourseCard)
+      document.dispatchEvent(new Event('courses-updated'));
 
-if (courseIds.length === 0) {
-  throw new Error('No valid course IDs found in cart.');
-}
-
-  try {
-    const config = {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    };
-
-    const response = await axios.post(`${API_URL}/api/users/enroll`, { courseIds }, config);
-    const { user: updatedUser } = response.data;
-
-    // ✅ FIXED: Use updateUserContext instead of setUserData
-    updateUserContext(updatedUser);
-    clearCart();
-
-    // 🔁 Notify MyCourses to refresh data
-    window.dispatchEvent(new Event('courses-updated'));
-
-    console.log('Checkout successful. User enrolled and cart cleared.');
-  } catch (error: any) {
-    console.error('Checkout failed:', error.response || error);
-    throw new Error(error.response?.data?.message || 'Enrollment failed: Please try logging in again.');
-  }
+      console.log('Checkout successful. User enrolled and cart cleared.');
+    } catch (error: any) {
+      console.error('Checkout failed:', error.response || error);
+      throw new Error(error.response?.data?.message || 'Enrollment failed: Please try logging in again.');
+    }
 };
 
 
   const getTotalItems = () => {
-    return items.reduce((total, item) => total + item.quantity, 0);
+    // Since each course is a unique item, this is just the length of the array
+    return items.length; 
   };
 
   const getTotalPrice = () => {
@@ -163,12 +152,4 @@ if (courseIds.length === 0) {
       {children}
     </CartContext.Provider>
   );
-};
-
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart must be used within a CartProvider');
-  }
-  return context;
 };
