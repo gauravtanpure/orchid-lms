@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import { Loader2, ArrowLeft, AlertTriangle, PlayCircle, Clock } from 'lucide-react';
+import { Loader2, ArrowLeft, AlertTriangle, PlayCircle, Clock, BookOpen } from 'lucide-react';
 import Header from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -40,39 +40,52 @@ const fetchCourseBySlug = async (courseSlug: string, token: string | null): Prom
     throw new Error('Authentication token is missing. Cannot fetch course content.');
   }
 
+  // --- ⬇️ MODIFICATION HERE ⬇️ ---
+  // We REMOVE the manual 'config' and 'headers' object.
+  // The AuthContext interceptor will handle the token.
+  /*
   const config = {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   };
+  */
+  // --- ⬆️ END OF MODIFICATION ⬆️ ---
+
 
   console.log(`🟢 Fetching course: ${API_URL}/api/courses/${courseSlug}`, 'Token Present:', !!token);
 
-  // This endpoint now returns the full course object including the lessons array
-  const { data } = await axios.get(`${API_URL}/api/courses/${courseSlug}`, config);
+  // --- ⬇️ MODIFICATION HERE ⬇️ ---
+  // The 'config' object is removed from the call.
+  const { data } = await axios.get(`${API_URL}/api/courses/${courseSlug}`);
+  // --- ⬆️ END OF MODIFICATION ⬆️ ---
+  
   return data;
 };
 
 
 const CoursePlayer: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { user, isAuthenticated } = useAuth();
-  const token = isAuthenticated ? 'DUMMY_AUTH_TOKEN' : null; // Replace with your actual token retrieval logic
+  // We get the real token from AuthContext
+  const { user, isAuthenticated, token } = useAuth(); 
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
 
+  // This queryKey now correctly uses the real token for dependency tracking
   const { data: course, isLoading, isError, error } = useQuery<CourseDetails, Error>({
     queryKey: ['coursePlayer', slug, token],
     queryFn: () => fetchCourseBySlug(slug!, token),
-    enabled: !!slug && !!token,
+    enabled: !!slug && !!token, // This is correct
     retry: 1,
     onError: (err) => console.error("Error fetching course for player:", err),
   });
 
+
   // Set the first lesson as the default when the course loads
   useEffect(() => {
     if (course && course.lessons.length > 0 && !currentLesson) {
-        // Find the first lesson (assuming lessons are already sorted by 'order' in the backend fetch)
-        setCurrentLesson(course.lessons[0]);
+        // Sort by order just in case they aren't
+        const sortedLessons = [...course.lessons].sort((a, b) => a.order - b.order);
+        setCurrentLesson(sortedLessons[0]);
     }
   }, [course, currentLesson]);
 
@@ -81,7 +94,8 @@ const CoursePlayer: React.FC = () => {
     return <Navigate to="/login" replace />; 
   }
 
-  if (isLoading || !slug || !token) {
+  // Show loading spinner if auth is loading OR the query is loading
+  if (isLoading || (isAuthenticated && !token)) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
@@ -89,7 +103,10 @@ const CoursePlayer: React.FC = () => {
     );
   }
 
+  // This is the block you are seeing
   if (isError || !course) {
+    // If 'error' exists, use its message. Otherwise, use the fallback.
+    // This is why you see "Course content not available."
     const errorMessage = (error as Error)?.message || 'Course content not available.';
     return (
       <div className="min-h-screen flex flex-col">
@@ -115,7 +132,6 @@ const CoursePlayer: React.FC = () => {
               <BookOpen className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
               <h1 className="text-2xl font-bold mb-2">{course.title} is Empty</h1>
               <p className="text-gray-600">This course has been created but no lessons have been added yet.</p>
-              {/* NOTE: You might add an admin check here to show a different message/button */}
               <Link to="/my-courses">
                   <Button className="mt-4" variant="outline">Back to My Courses</Button>
               </Link>
@@ -124,7 +140,8 @@ const CoursePlayer: React.FC = () => {
     );
   }
 
-  const activeLesson = currentLesson || course.lessons[0];
+  // Ensure we have a lesson to play
+  const activeLesson = currentLesson || [...course.lessons].sort((a, b) => a.order - b.order)[0];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -163,7 +180,7 @@ const CoursePlayer: React.FC = () => {
         </main>
 
         {/* Sidebar: Course Content/Lesson List */}
-        <aside className="lg:w-1/4 bg-card border-l p-6 flex flex-col shadow-inner">
+        <aside className="lg:w-1-4 bg-card border-l p-6 flex flex-col shadow-inner">
           <Link
             to="/my-courses"
             className="flex items-center text-sm font-medium text-indigo-600 mb-6 hover:underline"
@@ -175,7 +192,7 @@ const CoursePlayer: React.FC = () => {
           <h2 className="text-xl font-semibold mb-4 text-gray-800">Course Content ({course.lessons.length} Lessons)</h2>
           
           <div className="flex-grow overflow-y-auto space-y-1">
-            {course.lessons.map((lesson, index) => (
+            {course.lessons.sort((a, b) => a.order - b.order).map((lesson, index) => (
               <div
                 key={lesson._id}
                 onClick={() => setCurrentLesson(lesson)}
@@ -193,13 +210,12 @@ const CoursePlayer: React.FC = () => {
                 </div>
                 <p className={`text-xs mt-1 flex items-center ${activeLesson._id === lesson._id ? 'text-indigo-500' : 'text-muted-foreground'}`}>
                     <Clock className="w-3 h-3 mr-1" /> {lesson.duration} mins
-                </p>
+                </pre>
               </div>
             ))}
           </div>
         </aside>
       </div>
-      {/* <Footer /> // Footer is usually omitted in full-screen player views */}
     </div>
   );
 };

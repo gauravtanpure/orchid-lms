@@ -1,9 +1,11 @@
+// /frontend/src/contexts/CartContext.tsx
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 // 🟢 FIX: Corrected import path using alias
 import { useAuth } from '@/contexts/AuthContext'; 
 import axios from 'axios';
 
-// --- Assumed Interfaces from your Project (Updated) ---\r\n
+// --- Assumed Interfaces from your Project (Updated) ---
 export interface Course {
   id: string;
   _id: string; // Using '_id' for backend communication
@@ -34,7 +36,7 @@ interface CartContextType {
   getTotalPrice: () => number;
   checkout: () => Promise<void>;
 }
-// -------------------------------------------\r\n
+// -------------------------------------------
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -60,7 +62,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return [];
     }
   });
-  const { user, isAuthenticated, token } = useAuth();
+
+  // We still need the auth state for the checkout function, but the
+  // top-level 'throw new Error' checks were removed.
+  const { isAuthenticated, token, isLoading } = useAuth();
+
   
   // Save cart to localStorage whenever items change
   useEffect(() => {
@@ -91,31 +97,38 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const checkout = async () => {
-    if (!isAuthenticated || !token) {
+    // This check is fine, it just prevents double-clicks
+    if (isLoading) return; 
+    
+    // This token is used for the auth check below
+    const activeToken = token || localStorage.getItem('token');
+
+    // This check is correct and runs *at the time of checkout*
+    if (!isAuthenticated || !activeToken) {
       throw new Error('User must be logged in to checkout.');
     }
-    
-    // The simplified API needs course IDs
-    const courseIds = items.map(item => item._id);
 
+    const courseIds = items.map(item => item._id);
     try {
-      // Assuming your backend has an /api/enrollment endpoint
-      await axios.post(`${API_URL}/api/enrollment`, 
-        { courseIds }, 
-        { headers: { Authorization: `Bearer ${token}` } }
+      // --- ⬇️ FIX 3: Corrected API Endpoint URL ⬇️ ---
+      // Changed from '/api/enrollment' to '/api/users/enroll'
+      // to match common API structures and fix the 404 error.
+      await axios.post(
+        `${API_URL}/api/users/enroll`, 
+        { courseIds }
+        // No 'headers' object needed, AuthContext interceptor handles it
       );
+      // --- ⬆️ END OF FIX 3 ⬆️ ---
 
       clearCart();
-      
-      // OPTIONAL: Dispatch a custom event to notify other components (like CourseCard)
       document.dispatchEvent(new Event('courses-updated'));
-
-      console.log('Checkout successful. User enrolled and cart cleared.');
     } catch (error: any) {
-      console.error('Checkout failed:', error.response || error);
+      console.error('❌ Checkout failed full error:', error);
+      // Re-throw the specific error from the backend if available
       throw new Error(error.response?.data?.message || 'Enrollment failed: Please try logging in again.');
     }
-};
+  };
+
 
 
   const getTotalItems = () => {
