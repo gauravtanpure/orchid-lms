@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
-// New Lesson Interface
+// --- Interfaces (Lesson, CourseDetails) ---
 interface Lesson {
   _id: string;
   title: string;
@@ -19,19 +19,16 @@ interface Lesson {
   order: number;
 }
 
-// Updated CourseDetails Interface
 interface CourseDetails {
   _id: string;
   title: string;
   description?: string;
   instructor: string;
   slug: string;
-  lessons: Lesson[]; // Now an array of lessons
+  lessons: Lesson[];
 }
 
-/**
- * ✅ Fetch course details (requires auth token)
- */
+// --- ⬇️ UPGRADED API FETCH FUNCTION (WITH DEBUGGING) ⬇️ ---
 const fetchCourseBySlug = async (courseSlug: string, token: string | null): Promise<CourseDetails> => {
   if (!courseSlug || courseSlug === 'undefined') {
     throw new Error('Course slug is invalid or missing.');
@@ -40,62 +37,67 @@ const fetchCourseBySlug = async (courseSlug: string, token: string | null): Prom
     throw new Error('Authentication token is missing. Cannot fetch course content.');
   }
 
-  // --- ⬇️ MODIFICATION HERE ⬇️ ---
-  // We REMOVE the manual 'config' and 'headers' object.
-  // The AuthContext interceptor will handle the token.
-  /*
-  const config = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
-  */
-  // --- ⬆️ END OF MODIFICATION ⬆️ ---
+  const url = `${API_URL}/api/courses/${courseSlug}`;
+  console.log(`%c[DEBUG] Fetching course...%c\nURL: ${url}\nToken Present: ${!!token}`, 'color: blue; font-weight: bold;', 'color: black;');
 
+  try {
+    const response = await axios.get(url); // Interceptor adds token
+    
+    // --- DEBUGGING LOG 1 ---
+    console.log('%c[DEBUG] Server Response (Success):', 'color: green; font-weight: bold;', response);
 
-  console.log(`🟢 Fetching course: ${API_URL}/api/courses/${courseSlug}`, 'Token Present:', !!token);
+    // Check if data is null/undefined even on 200 OK
+    if (response.status === 200 && !response.data) {
+       console.error('❌ [DEBUG] Server returned 200 OK but response.data is empty! This is the bug.');
+       throw new Error('Server returned empty course data.');
+    }
 
-  // --- ⬇️ MODIFICATION HERE ⬇️ ---
-  // The 'config' object is removed from the call.
-  const { data } = await axios.get(`${API_URL}/api/courses/${courseSlug}`);
-  // --- ⬆️ END OF MODIFICATION ⬆️ ---
-  
-  return data;
+    return response.data;
+
+  } catch (error: any) {
+    // --- DEBUGGING LOG 2 ---
+    // This will log if the server sent a 4xx or 5xx error
+    console.error('%c[DEBUG] Axios request failed:', 'color: red; font-weight: bold;', error.response || error.message);
+    
+    // Re-throw the error for react-query
+    throw new Error(error.response?.data?.message || error.message || 'Unknown server error');
+  }
 };
+// --- ⬆️ END OF UPGRADED FUNCTION ⬆️ ---
 
 
+// --- Main Component (No changes from last time) ---
 const CoursePlayer: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  // We get the real token from AuthContext
-  const { user, isAuthenticated, token } = useAuth(); 
+  
+  const { isAuthenticated, token, isLoading: isAuthLoading } = useAuth(); 
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
 
-  // This queryKey now correctly uses the real token for dependency tracking
-  const { data: course, isLoading, isError, error } = useQuery<CourseDetails, Error>({
+  const { 
+    data: course, 
+    isLoading: isCourseLoading, 
+    isError, 
+    error 
+  } = useQuery<CourseDetails, Error>({
     queryKey: ['coursePlayer', slug, token],
     queryFn: () => fetchCourseBySlug(slug!, token),
-    enabled: !!slug && !!token, // This is correct
+    enabled: !isAuthLoading && !!token && !!slug, 
     retry: 1,
-    onError: (err) => console.error("Error fetching course for player:", err),
+    // Add an error log specifically for react-query
+    onError: (err) => console.error('%c[DEBUG] React Query Error:', 'color: orange; font-weight: bold;', err),
   });
 
 
   // Set the first lesson as the default when the course loads
   useEffect(() => {
     if (course && course.lessons.length > 0 && !currentLesson) {
-        // Sort by order just in case they aren't
         const sortedLessons = [...course.lessons].sort((a, b) => a.order - b.order);
         setCurrentLesson(sortedLessons[0]);
     }
   }, [course, currentLesson]);
 
-  if (!isAuthenticated && !isLoading) {
-    // If not authenticated, navigate to login or home
-    return <Navigate to="/login" replace />; 
-  }
-
-  // Show loading spinner if auth is loading OR the query is loading
-  if (isLoading || (isAuthenticated && !token)) {
+  // 1. Show loading spinner
+  if (isAuthLoading || isCourseLoading) {
     return (
       <div className="flex justify-center items-center h-screen bg-gray-50">
         <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
@@ -103,11 +105,19 @@ const CoursePlayer: React.FC = () => {
     );
   }
 
-  // This is the block you are seeing
+  // 2. Handle Not Authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />; 
+  }
+
+  // 3. Handle Query Error or Empty Data
   if (isError || !course) {
-    // If 'error' exists, use its message. Otherwise, use the fallback.
-    // This is why you see "Course content not available."
+    // This is the message you are seeing
     const errorMessage = (error as Error)?.message || 'Course content not available.';
+    
+    // --- DEBUGGING LOG 3 ---
+    console.log(`%c[DEBUG] Rendering Error UI%c\nisError: ${isError}\n!course: ${!course}\nMessage: ${errorMessage}`, 'color: red; font-weight: bold;', 'color: black;');
+
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -123,7 +133,7 @@ const CoursePlayer: React.FC = () => {
     );
   }
 
-  // Check if course has lessons
+  // 4. Handle Course with No Lessons
   if (course.lessons.length === 0) {
     return (
         <div className="min-h-screen flex flex-col">
@@ -140,7 +150,7 @@ const CoursePlayer: React.FC = () => {
     );
   }
 
-  // Ensure we have a lesson to play
+  // 5. RENDER THE PLAYER
   const activeLesson = currentLesson || [...course.lessons].sort((a, b) => a.order - b.order)[0];
 
   return (
@@ -210,7 +220,7 @@ const CoursePlayer: React.FC = () => {
                 </div>
                 <p className={`text-xs mt-1 flex items-center ${activeLesson._id === lesson._id ? 'text-indigo-500' : 'text-muted-foreground'}`}>
                     <Clock className="w-3 h-3 mr-1" /> {lesson.duration} mins
-                </pre>
+                </p>
               </div>
             ))}
           </div>
