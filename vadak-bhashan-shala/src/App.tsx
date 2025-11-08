@@ -71,7 +71,8 @@ const App = () => (
 
                 {/* ----------------- Logged-in User Routes ----------------- */}
                 <Route path="/my-courses" element={<ProtectedRoute><MyCourses /></ProtectedRoute>} />
-                <Route path="/learn/:courseId" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
+                <Route path="/learn/:slug" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
+
                 
 
                 {/* ----------------- Admin Routes ----------------- */}

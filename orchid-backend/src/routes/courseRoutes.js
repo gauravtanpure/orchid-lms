@@ -202,14 +202,10 @@ router.get('/', async (req, res) => {
     }
 });
 
-// =================================================================
-// 🚀 FIX APPLIED HERE 🚀
-// GET: Get course by slug (Public/Detail page - Now includes lessons)
-// =================================================================
+// GET: Get course by slug (Public/Detail page - No lessons needed here)
 router.get('/slug/:slug', async (req, res) => {
     try {
-        // We removed .select('-lessons') to include lessons for the detail page
-        const course = await Course.findOne({ slug: req.params.slug }).select('-__v'); 
+        const course = await Course.findOne({ slug: req.params.slug }).select('-lessons -__v');
         if (!course) {
             return res.status(404).json({ message: 'Course not found' });
         }
@@ -222,6 +218,7 @@ router.get('/slug/:slug', async (req, res) => {
 
 
 // =================================================================
+//  🚀 FINAL FIX APPLIED HERE 🚀
 //  GET: Get course details by slug (Protected/Player page - **Includes lessons + Enrollment Check**)
 // =================================================================
 router.get('/player/:slug', protect, async (req, res) => {
