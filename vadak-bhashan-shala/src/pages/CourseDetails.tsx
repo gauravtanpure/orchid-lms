@@ -85,8 +85,10 @@ const CourseDetails: React.FC = () => {
         // The backend should be configured to send lesson data even to logged-out users for this to work.
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
         
-        // IMPORTANT: Fetching from the endpoint that returns lessons
-        const { data } = await axios.get(`${API_URL}/api/courses/${slug}`, config);
+        // ============================================================
+        // 🚀 FIX APPLIED HERE: Corrected the endpoint to match the backend route
+        // ============================================================
+        const { data } = await axios.get(`${API_URL}/api/courses/slug/${slug}`, config);
 
         if (!data) throw new Error('Course not found');
         setCourse(data);
