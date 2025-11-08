@@ -4,7 +4,7 @@ import { BookOpen, ChevronRight, GraduationCap, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import axios from 'axios';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -18,17 +18,24 @@ interface Course {
   completionRate: number;
 }
 
+interface ProgressInfo {
+  completedLessons?: string[]; // array of lesson ids
+  completionRate?: number;     // percent 0-100
+  totalLessons?: number;       // total lessons in the course (optional)
+}
+
 const API_URL = import.meta.env.VITE_REACT_APP_BACKEND_URL;
 
+// fetch enrolled courses (existing)
 const fetchEnrolledCourses = async (token: string | null): Promise<Course[]> => {
   if (!token) return [];
 
-  const config = { 
-    headers: { 
+  const config = {
+    headers: {
       Authorization: `Bearer ${token}`,
       'Cache-Control': 'no-store',
       'Pragma': 'no-cache',
-      'Expires': '0',
+      Expires: '0',
       'If-Modified-Since': '0'
     }
   };
@@ -36,6 +43,16 @@ const fetchEnrolledCourses = async (token: string | null): Promise<Course[]> => 
   const url = `${API_URL}/api/users/my-courses`;
   const { data } = await axios.get(url, config);
   return data;
+};
+
+// new: fetch per-course progress for current user
+const fetchProgressForCourse = async (courseId: string, token: string | null): Promise<ProgressInfo> => {
+  if (!token) return {};
+  const url = `${API_URL}/api/users/course-progress/${encodeURIComponent(courseId)}`;
+  const config = { headers: { Authorization: `Bearer ${token}` } };
+  const { data } = await axios.get(url, config);
+  // expected: { completedLessons: string[], completionRate: number, totalLessons?: number }
+  return data || {};
 };
 
 const MyCourses: React.FC = () => {
@@ -52,27 +69,39 @@ const MyCourses: React.FC = () => {
     refetchOnWindowFocus: true,
   });
 
+  // re-fetch when other parts of app notify updates (you already had this)
   useEffect(() => {
     const handleCourseUpdate = () => refetch();
     window.addEventListener('courses-updated', handleCourseUpdate);
     return () => window.removeEventListener('courses-updated', handleCourseUpdate);
   }, [refetch]);
 
-  // ✅ Deduplicate courses by _id
+  // dedupe by _id
   const uniqueCourses = useMemo(() => {
     const map = new Map<string, Course>();
-    enrolledCourses.forEach(course => {
-      map.set(course._id, course);
-    });
+    enrolledCourses.forEach(course => map.set(course._id, course));
     return Array.from(map.values());
   }, [enrolledCourses]);
 
+  // pagination helpers
   const totalCourses = uniqueCourses.length;
   const totalPages = Math.ceil(totalCourses / coursesPerPage);
   const currentCourses = useMemo(() => {
     const startIndex = (currentPage - 1) * coursesPerPage;
     return uniqueCourses.slice(startIndex, startIndex + coursesPerPage);
   }, [uniqueCourses, currentPage]);
+
+  // --- useQueries to fetch per-course progress in parallel ---
+  // returns an array of query results, same order as currentCourses
+  const progressQueries = useQueries({
+    queries: currentCourses.map(course => ({
+      queryKey: ['courseProgress', course._id, user?.id],
+      queryFn: () => fetchProgressForCourse(course._id, token),
+      enabled: !!token && !!course._id,
+      staleTime: 2 * 60 * 1000,
+      retry: 1,
+    }))
+  });
 
   if (!isLoggedIn) {
     return <p className="text-center p-8">Please log in to view your courses.</p>;
@@ -114,26 +143,73 @@ const MyCourses: React.FC = () => {
         ) : (
           <>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {currentCourses.map((course) => {
-                const slug = course.slug || '';
+              {currentCourses.map((course, idx) => {
+                // progress query corresponding to this course (same index as currentCourses)
+                const pq = progressQueries[idx];
+                const progressData: ProgressInfo | undefined = pq?.data as ProgressInfo | undefined;
+
+                // calculate values with fallbacks:
+                const percent = typeof progressData?.completionRate === 'number'
+                  ? progressData.completionRate
+                  : Math.max(0, Math.min(100, Math.round((course.completionRate || 0))));
+
+                const completedCount = Array.isArray(progressData?.completedLessons)
+                  ? progressData!.completedLessons!.length
+                  : undefined;
+
+                const totalLessons = typeof progressData?.totalLessons === 'number'
+                  ? progressData!.totalLessons
+                  : undefined;
+
+                // fallback description percent from course object if present
+                const progressLabel = (completedCount !== undefined && totalLessons !== undefined)
+                  ? `${completedCount} / ${totalLessons} lessons`
+                  : `${percent}% complete`;
+
                 return (
                   <Card key={course._id} className="hover:shadow-xl transition-shadow duration-300">
                     <CardHeader>
                       <CardTitle className="text-lg text-indigo-700">{course.title}</CardTitle>
                       <CardDescription className="text-sm">
-                        Progress: {course.completionRate.toFixed(0)}% Complete
+                        {pq?.isLoading ? (
+                          <span className="inline-flex items-center gap-2 text-gray-600">
+                            <Loader2 className="w-4 h-4 animate-spin" /> Loading progress...
+                          </span>
+                        ) : (
+                          <>
+                            <span className="font-medium">{progressLabel}</span>
+                            {typeof percent === 'number' && (
+                              <span className="text-muted-foreground ml-2">({percent}% )</span>
+                            )}
+                          </>
+                        )}
                       </CardDescription>
                     </CardHeader>
+
                     <CardContent>
                       <p className="text-gray-600 line-clamp-2 mb-4">{course.description}</p>
+
+                      {/* progress bar */}
                       <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
                         <div
-                          className="bg-green-500 h-2.5 rounded-full"
-                          style={{ width: `${course.completionRate}%` }}
+                          className="bg-green-500 h-2.5 rounded-full transition-all"
+                          style={{ width: `${percent}%` }}
                         />
                       </div>
-                      {slug ? (
-                        <Link to={`/learn/${slug}`}>
+
+                      {totalLessons !== undefined && completedCount !== undefined ? (
+                        <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
+                          <div>{completedCount} completed</div>
+                          <div>{totalLessons} lessons</div>
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-500 mb-3">
+                          {pq?.isLoading ? 'Fetching details...' : `${percent}% complete`}
+                        </div>
+                      )}
+
+                      {course.slug ? (
+                        <Link to={`/learn/${course.slug}`}>
                           <Button variant="default" className="w-full bg-green-500 hover:bg-green-600">
                             Continue Learning
                             <ChevronRight className="w-4 h-4 ml-2" />

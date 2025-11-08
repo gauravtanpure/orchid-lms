@@ -80,21 +80,27 @@ const CourseDetails: React.FC = () => {
     const fetchCourse = async () => {
       try {
         setLoading(true);
-        // We fetch from the detailed endpoint.
-        // We send the token if it exists to get full data.
-        // The backend should be configured to send lesson data even to logged-out users for this to work.
         const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
-        
-        // ============================================================
-        // 🚀 FIX APPLIED HERE: Corrected the endpoint to match the backend route
-        // ============================================================
-        const { data } = await axios.get(`${API_URL}/api/courses/slug/${slug}`, config);
+
+        // Fetch public course details (may exclude lessons)
+        const endpoint = token ? `${API_URL}/api/courses/player/${slug}` : `${API_URL}/api/courses/slug/${slug}`;
+        const { data } = await axios.get(endpoint, config);
 
         if (!data) throw new Error('Course not found');
-        setCourse(data);
-        // Set the first lesson as the default preview
-        if (data.lessons && data.lessons.length > 0) {
-          setCurrentPreview(data.lessons[0]);
+
+        // ---------- SAFETY: ensure lessons is always an array ----------
+        const safeData: Course = {
+          ...data,
+          lessons: Array.isArray(data.lessons) ? data.lessons : [],
+        };
+
+        setCourse(safeData);
+
+        // Only set preview if there's at least one lesson
+        if (safeData.lessons.length > 0) {
+          setCurrentPreview(safeData.lessons[0]);
+        } else {
+          setCurrentPreview(null);
         }
       } catch (err) {
         console.error('Error fetching course:', err);
@@ -108,6 +114,7 @@ const CourseDetails: React.FC = () => {
       fetchCourse();
     }
   }, [slug, token]);
+
 
   // Handle clicking on a lesson
   const handleLessonClick = (lesson: Lesson) => {
