@@ -11,6 +11,9 @@ import userRoutes from './src/routes/userRoutes.js';
 import adminRoutes from './src/routes/adminRoutes.js';
 import blogRoutes from './src/routes/blogRoutes.js';
 import bannerRoutes from './src/routes/bannerRoutes.js';
+import dubbingRoutes from './src/routes/dubbingRoutes.js';
+import dynamicDubbingRoutes from './src/routes/dynamicDubbingRoutes.js';
+import progressRoutes from './src/routes/progressRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 1337;
@@ -30,6 +33,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/banners', bannerRoutes);
+app.use('/api/dubbing', dubbingRoutes);
+app.use('/api/dubbing', dynamicDubbingRoutes);
+app.use('/api/users', progressRoutes);
 
 app.get('/', (req, res) => res.send('Orchid API is running!'));
 

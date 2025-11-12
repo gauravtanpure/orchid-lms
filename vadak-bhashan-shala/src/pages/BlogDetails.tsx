@@ -21,7 +21,10 @@ interface BlogPost {
   createdAt: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:1337';
+const API_URL =
+  import.meta.env.VITE_REACT_APP_BACKEND_URL ||
+  import.meta.env.VITE_STRAPI_API_URL ||
+  'http://localhost:1337';
 
 const BlogDetails: React.FC = () => {
   const { blogId } = useParams<{ blogId: string }>(); // Get the ID from the URL

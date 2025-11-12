@@ -45,7 +45,7 @@ const ManageBlogs: React.FC = () => {
     // FIX: Correctly destructure user and token from useAuth
     // ------------------------------------------------------------------
     const { user, token, isLoading: authLoading } = useAuth();
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'; 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:1337'; 
 
     const [blogs, setBlogs] = useState<BlogPost[]>([]);
     const [loading, setLoading] = useState(true);
